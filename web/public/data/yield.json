@@ -1,0 +1,126 @@
+{
+ "source": "NASA POWER daily (community RE) 2015-2025 + pvlib PVWatts simulation",
+ "site": {
+  "name": "City of Elmina, Selangor",
+  "lat": 3.1992,
+  "lon": 101.5006,
+  "tz": "Asia/Kuala_Lumpur",
+  "altitude_m": 30
+ },
+ "system": {
+  "tilt_deg": 10,
+  "azimuth_deg": 180,
+  "losses_pct": 14.0,
+  "gamma_pdc": -0.0037,
+  "inverter_eff": 0.96
+ },
+ "annual_kwh_per_kwp": 1287.4,
+ "annual_by_year": {
+  "2015": 1265.8,
+  "2016": 1348.8,
+  "2017": 1268.9,
+  "2018": 1301.6,
+  "2019": 1307.4,
+  "2020": 1305.4,
+  "2021": 1313.4,
+  "2022": 1264.3,
+  "2023": 1255.2,
+  "2024": 1268.0,
+  "2025": 1263.0
+ },
+ "sanity": {
+  "range": [
+   1100,
+   1500
+  ],
+  "ok": true
+ },
+ "monthly": [
+  {
+   "month": "Jan",
+   "kwh_per_kwp": 110.3,
+   "p10_kwh_per_kwp": 98.9,
+   "daily_mean": 3.557
+  },
+  {
+   "month": "Feb",
+   "kwh_per_kwp": 111.0,
+   "p10_kwh_per_kwp": 97.8,
+   "daily_mean": 3.927
+  },
+  {
+   "month": "Mar",
+   "kwh_per_kwp": 120.9,
+   "p10_kwh_per_kwp": 114.0,
+   "daily_mean": 3.901
+  },
+  {
+   "month": "Apr",
+   "kwh_per_kwp": 109.2,
+   "p10_kwh_per_kwp": 106.0,
+   "daily_mean": 3.642
+  },
+  {
+   "month": "May",
+   "kwh_per_kwp": 106.2,
+   "p10_kwh_per_kwp": 102.0,
+   "daily_mean": 3.425
+  },
+  {
+   "month": "Jun",
+   "kwh_per_kwp": 100.7,
+   "p10_kwh_per_kwp": 97.0,
+   "daily_mean": 3.357
+  },
+  {
+   "month": "Jul",
+   "kwh_per_kwp": 105.2,
+   "p10_kwh_per_kwp": 101.8,
+   "daily_mean": 3.395
+  },
+  {
+   "month": "Aug",
+   "kwh_per_kwp": 107.5,
+   "p10_kwh_per_kwp": 102.8,
+   "daily_mean": 3.467
+  },
+  {
+   "month": "Sep",
+   "kwh_per_kwp": 102.6,
+   "p10_kwh_per_kwp": 95.3,
+   "daily_mean": 3.421
+  },
+  {
+   "month": "Oct",
+   "kwh_per_kwp": 109.8,
+   "p10_kwh_per_kwp": 105.8,
+   "daily_mean": 3.543
+  },
+  {
+   "month": "Nov",
+   "kwh_per_kwp": 100.0,
+   "p10_kwh_per_kwp": 96.1,
+   "daily_mean": 3.335
+  },
+  {
+   "month": "Dec",
+   "kwh_per_kwp": 103.9,
+   "p10_kwh_per_kwp": 95.8,
+   "daily_mean": 3.35
+  }
+ ],
+ "hourly_shape": {
+  "7": 0.0011,
+  "8": 0.0325,
+  "9": 0.0707,
+  "10": 0.102,
+  "11": 0.124,
+  "12": 0.1361,
+  "13": 0.1384,
+  "14": 0.1309,
+  "15": 0.1136,
+  "16": 0.0866,
+  "17": 0.0512,
+  "18": 0.0128
+ }
+}

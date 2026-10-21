@@ -1,0 +1,30 @@
+{
+  "_note": "Hand-computed cases shared by pipeline/tests (pytest) and web/src/lib/formulas.test.ts (vitest).",
+  "sizing": [
+    { "demand": 10000, "unit": "year", "share": 0.95, "avg_mwh_per_roof": 116, "buffer": 0.15,
+      "need_yr": 10000, "solar_need": 9500, "roofs_base": 82, "roofs_needed": 94 },
+    { "demand": 500, "unit": "month", "share": 0.70, "avg_mwh_per_roof": 200, "buffer": 0.25,
+      "need_yr": 6000, "solar_need": 4200, "roofs_base": 21, "roofs_needed": 26 },
+    { "demand": 300, "unit": "year", "share": 1.0, "avg_mwh_per_roof": 150, "buffer": 0.25,
+      "need_yr": 300, "solar_need": 300, "roofs_base": 2, "roofs_needed": 3 },
+    { "demand": 1200, "unit": "year", "share": 0.45, "avg_mwh_per_roof": 6.8, "buffer": 0.0,
+      "need_yr": 1200, "solar_need": 540, "roofs_base": 80, "roofs_needed": 80 }
+  ],
+  "cover": [
+    { "roofs": 26, "avg_mwh_per_roof": 200, "solar_need": 4200,
+      "monthly_share": [0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333, 0.0833333333],
+      "min_cover": 1.2381, "dropout_cover": 0.9905 },
+    { "roofs": 10, "avg_mwh_per_roof": 120, "solar_need": 1200,
+      "monthly_share": [0.10, 0.09, 0.09, 0.08, 0.08, 0.07, 0.08, 0.08, 0.08, 0.09, 0.08, 0.08],
+      "min_cover": 0.84, "dropout_cover": 0.672 }
+  ],
+  "enough": [
+    { "good": [40, 30], "needed": 70, "expected": true },
+    { "good": [40, 29], "needed": 70, "expected": false },
+    { "good": [], "needed": 1, "expected": false }
+  ],
+  "p90": [
+    { "actual": [10, 12, 8, 15, 9], "p90": [9, 12, 9, 10, 9], "expected": 0.8 },
+    { "actual": [], "p90": [], "expected": 0 }
+  ]
+}
