@@ -1,0 +1,238 @@
+{
+ "approach": "forecast_features",
+ "approach_label": "Inputs are archived weather forecasts (Open-Meteo Historical Forecast API), not observed weather.",
+ "caveat": "The Historical Forecast archive is built from the first hours of each forecast run (same-day lead), which flatters accuracy.",
+ "actual_source": "pvlib simulation of NASA POWER satellite irradiance (not metered output)",
+ "model": "LightGBM quantile regression (alpha 0.1 / 0.5 / 0.9)",
+ "train_period": "2017-01-02 to 2022-12-31",
+ "test_period": "2023-01-01 to 2025-12-31",
+ "calibration": {
+  "method": "Conformal shift of P90 fitted on 2022 (model trained 2017–2021)",
+  "p90_shift_mwh": 2.76,
+  "raw_p90_hit_rate_2022": 0.679
+ },
+ "portfolio_kwp": 10000,
+ "demand_mwh_day": 31.2,
+ "test": {
+  "days": 1096,
+  "p90_hit_rate": 0.926,
+  "p50_mape_pct": 11.0,
+  "p10_exceed_rate": 0.132
+ },
+ "test_uncalibrated": {
+  "days": 1096,
+  "p90_hit_rate": 0.802,
+  "p50_mape_pct": 11.0,
+  "p10_exceed_rate": 0.132
+ },
+ "baseline_climatology_mape_pct": 15.8,
+ "day_ahead_check": {
+  "days": 712,
+  "p90_hit_rate": 0.861,
+  "p50_mape_pct": 13.8,
+  "p10_exceed_rate": 0.079,
+  "from": "2024-01-20",
+  "to": "2025-12-31",
+  "source": "Open-Meteo Previous Runs API (day-1 lead)"
+ },
+ "by_weather": [
+  {
+   "class": "sunny",
+   "days": 233,
+   "p50_mape_pct": 5.4,
+   "p90_hit_rate": 0.996,
+   "trust": "High"
+  },
+  {
+   "class": "cloudy",
+   "days": 403,
+   "p50_mape_pct": 7.1,
+   "p90_hit_rate": 0.968,
+   "trust": "High"
+  },
+  {
+   "class": "rain",
+   "days": 362,
+   "p50_mape_pct": 12.5,
+   "p90_hit_rate": 0.892,
+   "trust": "Medium"
+  },
+  {
+   "class": "storm",
+   "days": 98,
+   "p50_mape_pct": 34.4,
+   "p90_hit_rate": 0.714,
+   "trust": "Low"
+  }
+ ],
+ "weather_class_rules": {
+  "sunny": "clearness ≥ 0.80",
+  "cloudy": "0.65–0.80",
+  "rain": "clearness < 0.65 or rain ≥ 10 mm",
+  "storm": "clearness < 0.50 or rain ≥ 30 mm"
+ },
+ "wettest_week": {
+  "start": "2025-11-22",
+  "end": "2025-11-28",
+  "rain_mm": 281.9,
+  "delivered_mwh": 152.8,
+  "shortfall_if_p50_mwh": 32.3,
+  "shortfall_if_p90_mwh": 0.9,
+  "promised_p50_mwh": 179.1,
+  "promised_p90_mwh": 114.8
+ },
+ "sample_window": [
+  {
+   "date": "2025-11-18",
+   "weather": "rain",
+   "p90": 27.9,
+   "p50": 35.3,
+   "p10": 37.9,
+   "actual": 31.8,
+   "rain_mm": 5.6
+  },
+  {
+   "date": "2025-11-19",
+   "weather": "cloudy",
+   "p90": 17.6,
+   "p50": 26.4,
+   "p10": 31.9,
+   "actual": 35.6,
+   "rain_mm": 9.6
+  },
+  {
+   "date": "2025-11-20",
+   "weather": "rain",
+   "p90": 17.3,
+   "p50": 25.4,
+   "p10": 30.3,
+   "actual": 30.6,
+   "rain_mm": 11.5
+  },
+  {
+   "date": "2025-11-21",
+   "weather": "storm",
+   "p90": 20.1,
+   "p50": 29.8,
+   "p10": 34.8,
+   "actual": 24.3,
+   "rain_mm": 29.4
+  },
+  {
+   "date": "2025-11-22",
+   "weather": "rain",
+   "p90": 27.3,
+   "p50": 34.0,
+   "p10": 37.3,
+   "actual": 35.8,
+   "rain_mm": 12.2
+  },
+  {
+   "date": "2025-11-23",
+   "weather": "storm",
+   "p90": 15.1,
+   "p50": 23.0,
+   "p10": 30.2,
+   "actual": 14.2,
+   "rain_mm": 60.1
+  },
+  {
+   "date": "2025-11-24",
+   "weather": "storm",
+   "p90": 10.2,
+   "p50": 21.0,
+   "p10": 28.5,
+   "actual": 14.1,
+   "rain_mm": 68.5
+  },
+  {
+   "date": "2025-11-25",
+   "weather": "rain",
+   "p90": 15.7,
+   "p50": 24.8,
+   "p10": 31.6,
+   "actual": 29.0,
+   "rain_mm": 11.2
+  },
+  {
+   "date": "2025-11-26",
+   "weather": "rain",
+   "p90": 27.1,
+   "p50": 34.7,
+   "p10": 38.2,
+   "actual": 32.5,
+   "rain_mm": 6.3
+  },
+  {
+   "date": "2025-11-27",
+   "weather": "storm",
+   "p90": 9.6,
+   "p50": 20.4,
+   "p10": 28.3,
+   "actual": 13.1,
+   "rain_mm": 85.3
+  },
+  {
+   "date": "2025-11-28",
+   "weather": "storm",
+   "p90": 9.7,
+   "p50": 21.2,
+   "p10": 28.3,
+   "actual": 14.2,
+   "rain_mm": 38.3
+  },
+  {
+   "date": "2025-11-29",
+   "weather": "cloudy",
+   "p90": 33.2,
+   "p50": 41.8,
+   "p10": 43.1,
+   "actual": 39.2,
+   "rain_mm": 1.9
+  },
+  {
+   "date": "2025-11-30",
+   "weather": "sunny",
+   "p90": 32.9,
+   "p50": 41.6,
+   "p10": 45.0,
+   "actual": 44.5,
+   "rain_mm": 0.2
+  },
+  {
+   "date": "2025-12-01",
+   "weather": "sunny",
+   "p90": 36.1,
+   "p50": 43.6,
+   "p10": 46.2,
+   "actual": 46.3,
+   "rain_mm": 0.2
+  }
+ ],
+ "feature_importance": [
+  {
+   "feature": "Forecast sunlight (irradiance)",
+   "share": 0.32
+  },
+  {
+   "feature": "Time of year",
+   "share": 0.154
+  },
+  {
+   "feature": "Forecast sunshine hours",
+   "share": 0.14
+  },
+  {
+   "feature": "Last week's output",
+   "share": 0.088
+  },
+  {
+   "feature": "Output two days ago",
+   "share": 0.069
+  },
+  {
+   "feature": "Forecast rainfall",
+   "share": 0.068
+  }
+ ]
+}
