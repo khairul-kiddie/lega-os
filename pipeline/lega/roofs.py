@@ -32,7 +32,7 @@ def yield_score(specific_yield: float, site_yield: float) -> float:
 
 def likelihood(owner: str, condition: float, years_left: int, attended: bool) -> tuple[float, list[str]]:
     """Rule-based likelihood to sign, with reasons."""
-    s, why = LIKELIHOOD_BASE[owner], [owner.lower()]
+    s, why = LIKELIHOOD_BASE[owner], [owner]
     if years_left >= 15:
         s += 10; why.append(f"{years_left} yrs on lease/title")
     elif years_left < 8:
