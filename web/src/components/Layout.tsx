@@ -50,6 +50,9 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+        <NavLink to="/resident" className="hidden md:flex mx-3 mt-6 min-h-touch items-center rounded-lg px-3 text-xs text-white/70 hover:bg-white/5 hover:text-white">
+          Resident app (mock) →
+        </NavLink>
         <div className="hidden md:block mt-auto px-5 py-5 text-xs text-white/60 leading-relaxed">
           Prototype for SDP University Hackathon 2026. Base map: Sime Darby Property.
         </div>

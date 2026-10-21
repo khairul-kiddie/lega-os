@@ -5,6 +5,7 @@ import Portfolio from './pages/Portfolio'
 import Leasing from './pages/Leasing'
 import Insights from './pages/Insights'
 import Firming from './pages/Firming'
+import Resident from './pages/Resident'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/leasing" element={<Leasing />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/firming" element={<Firming />} />
+        <Route path="/resident" element={<Resident />} />
         <Route path="*" element={<Navigate to="/map" replace />} />
       </Route>
     </Routes>

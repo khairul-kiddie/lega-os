@@ -33,6 +33,7 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Buyer demand (Innovation Park, 12,000 MWh/yr) | **Sample** | Example for the demo |
 | Usage pattern shares (office 95%, mall 70%, 24h 45%) | Placeholder | Replace with metered load profiles |
 | Scans of other townships (Bukit Raja, Serenia City, …) | **Sample** | Deterministic simulated scan |
+| Resident app mock (lease income, panel status, street card) | Placeholder | Shown as `[X]`; its 7-day bars scale the live forecast to a 5.3 kWp home |
 
 Every screen that shows sample numbers carries a "sample data" note.
 
