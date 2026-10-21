@@ -162,7 +162,7 @@ function ZoneView({ data, site, siteKey, zone, onBack }: { data: RoofsData; site
       </nav>
       <PageHeader title={`Zone ${zone.id}`} subtitle={`${data.type_label[zone.type]} · ${zone.rows} × ${zone.cols} roofs`} right={<SampleNote />} />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Kpi label="Roofs" value={s.n_roofs} />
         <Kpi label="Average score" value={fmt(s.avg_score)} unit="/100" />
         <Kpi label="Good roofs (75+)" value={s.good_roofs} />

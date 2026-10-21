@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 type NavItem = { to: string; label: string; icon: string; badge?: string }
 
@@ -19,6 +20,10 @@ function Icon({ d }: { d: string }) {
 }
 
 export default function Layout() {
+  const { pathname, search } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname, search])
   return (
     <div className="min-h-screen md:flex">
       <aside className="bg-side text-white md:w-60 md:shrink-0 md:min-h-screen md:sticky md:top-0 md:h-screen flex md:flex-col">
