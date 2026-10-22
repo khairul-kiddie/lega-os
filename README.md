@@ -34,7 +34,6 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Yield per township | **Real (simulated)** | pvlib on each township's own NASA POWER cell (1,284–1,320 kWh/kWp/yr) |
 | Roof type (house / terrace row / mid-size / factory), usable panel area | Estimated | Size-and-shape rule on the real footprint |
 | Shading, roof condition, owner type, likelihood to sign | **Sample** | Fixed seed per roof. The footprints have no building heights, so shading can't be computed yet |
-| Elmina Business Park master-plan zones | Hand-placed + **sample** | `pipeline/data/zones.json` on the SDP master plan; planned buildings not yet in the imagery |
 | Buyers: Innovation Park (1,800 MWh/yr, office hours), Elmina Lakeside Mall (2,400 MWh/yr, mall hours) | **Sample** | Example buyers, not real contracts |
 | Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit with the best City of Elmina roofs for the Innovation Park plan; editable |
 | Roof facing, usable panel area, sun lost to shade | **Sample** | Derived from the synthetic roof attributes |
@@ -45,14 +44,13 @@ Every screen that shows sample numbers carries a "sample data" note.
 
 ## Roof map and township scan
 
-The Roof map has three levels:
+The Roof map has two levels, both built from satellite data:
 
 1. **All townships** (the default view): one numbered pin per SDP township, green once scanned and dashed white before. Beside the map:
    - the selected township, with **Open results** / **Re-scan**, or its expected building count and **Scan**
    - the list of all townships
    - a **Scan any other area** box, which validates its input; custom areas are a roadmap stub
-2. **One township**: every roof on satellite imagery, coloured by score. City of Elmina has a **Business park | Homes** toggle. Business park opens on the SDP master plan, with the satellite scan as a second view.
-3. **One master-plan zone** (Elmina Business Park): roof tiles, the cropped master plan, and the roof panel.
+2. **One township**: every roof on satellite imagery, coloured by score, with filters, the best roofs and a roof panel. City of Elmina has a **Business park | Homes** toggle; both are satellite scans.
 
 The township list is in `pipeline/lega/townships.py` (`TOWNSHIPS`). Locations come from OpenStreetMap and should be **confirmed against SDP's official township list**:
 - City of Elmina (homes + Elmina Business Park), Bandar Bukit Raja, Serenia City, Ara Damansara, Putra Heights (Selangor)
@@ -94,7 +92,7 @@ The work is precomputed by `python -m lega.townships`; the animation replays it,
 **Caveats:**
 - **Why outlines, not boxes.** An earlier version took every building in each township's bounding box. For City of Elmina that pulled in Kampung Kubu Gajah and other neighbouring areas: only 716 of its 4,697 "Elmina" roofs were actually inside Elmina. Scans are now clipped to the OpenStreetMap outline, and a test checks that every roof lies inside it.
 - **Why Overture, not Microsoft alone.** Microsoft's footprints come from older imagery and missed most of Elmina's newer housing: 861 buildings inside Elmina's outline, against 2,380 in Overture, which adds OpenStreetMap and Google Open Buildings.
-- **Still not complete.** Outlines reflect each source's imagery date, so the newest phases and land under construction may be missing. Elmina Business Park shows 200 buildings, while its master plan has many more planned; that is why its site opens on the master plan.
+- **Still not complete.** Outlines reflect each source's imagery date, so the newest phases and land under construction may be missing. Elmina Business Park shows 200 buildings; planned or newly built units appear once the building datasets catch up (or, in production, from SDP layouts and drone surveys).
 - **Township boundaries are OpenStreetMap's**, not SDP's. If SDP's official City of Elmina boundary includes areas outside the OSM outline, those roofs are not counted. Confirm against SDP's list.
 - Potential assumes every solar-ready roof is leased.
 - Factory roofs dominate the totals. Bukit Raja's largest roof inside its outline is about 31,500 m².
@@ -140,7 +138,7 @@ lega-os/
     lega/nasa_power.py      NASA POWER daily download (cached in data/raw/)
     lega/simulate.py        pvlib yield simulation → yield.json
     lega/townships.py       township scans: footprints → solar-ready roofs → townships/*.json
-    lega/roofs.py           master-plan zone roofs for Elmina Business Park → roofs.json (sample)
+    lega/scoring.py         roof score rules (40/20/20/20, likelihood to sign, "why" phrase)
     lega/forecast.py        LightGBM quantile models and backtest → forecast_backtest.json
     lega/live.py            Open-Meteo 16-day forecast → forecast_live.json (cached fallback)
     lega/formulas.py        portfolio formulas (Python reference)
@@ -207,7 +205,7 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
 ## Production architecture (not built in this prototype)
 
 - **API:** FastAPI service with PostGIS. It stores roof polygons, scores, owners and lease status, and serves the portfolio and leasing workflows to several users.
-- **Roof detection:** segmentation on satellite or aerial imagery replaces the hand-placed zones and sample roof areas. LiDAR or a 3D city model replaces synthetic shading.
+- **Roof detection:** segmentation on satellite or aerial imagery adds buildings that the open datasets haven't captured yet. LiDAR or a 3D city model replaces synthetic shading.
 - **Scheduled jobs:**
   - a nightly forecast run (Open-Meteo commercial plan or a national weather feed)
   - weekly retraining on metered inverter output, once installations are live
@@ -223,6 +221,5 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
 - **Overture Maps buildings:** Open Database License (ODbL); it includes OpenStreetMap (ODbL), Google Open Buildings (CC BY 4.0 / ODbL) and Microsoft ML Building Footprints (ODbL). The derived township files keep the ODbL.
 - **Esri World Imagery:** © Esri, Maxar, Earthstar Geographics. Tiles are used with attribution for this non-commercial prototype; a commercial deployment needs an Esri (ArcGIS) licence or another imagery provider.
 - **OpenStreetMap / Nominatim:** township extents and place labels, © OpenStreetMap contributors (ODbL).
-- **Base map:** Elmina Business Park master plan, © Sime Darby Property. Used for the hackathon prototype only.
 
 No API keys are used or stored in this repository.

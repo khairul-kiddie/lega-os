@@ -35,7 +35,7 @@ function nextStep(r: LeaseItem): string {
   }
 }
 
-const SEEDED_KEY = 'lega.leasing.seeded.v4'
+const SEEDED_KEY = 'lega.leasing.seeded.v5'
 
 export default function Leasing() {
   const items = useStore(leasingStore)
@@ -154,11 +154,7 @@ export default function Leasing() {
                     <tr key={r.roofId} className="border-b border-line last:border-0">
                       <td className="px-2 py-3 num">{rank}</td>
                       <td className="px-2 py-3">
-                        {r.site !== 'business_park' && r.site !== 'homes' ? (
-                          <Link to={roofHref(r.site, r.roofId)} className="font-semibold underline decoration-line underline-offset-4 hover:decoration-primary">{r.label}</Link>
-                        ) : (
-                          <span className="font-semibold">{r.label}</span>
-                        )}
+                        <Link to={roofHref(r.site, r.roofId)} className="font-semibold underline decoration-line underline-offset-4 hover:decoration-primary">{r.label}</Link>
                         <div className="text-sm text-muted">{r.group}</div>
                       </td>
                       <td className="px-2 py-3 num">{r.score}</td>

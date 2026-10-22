@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Kpi, PageHeader, Segmented } from '../components/ui'
-import SiteMap, { MapLegend, ZoneCrop } from '../components/SiteMap'
 import SatMap, { SAT_COLORS, type ScanSweep } from '../components/SatMap'
 import TownshipsMap from '../components/TownshipsMap'
-import { fmt, scoreBand, SITE_LABEL, TYPE_PLURAL, useJson } from '../lib/data'
-import type { Roof, RoofsData, ScorePart, Site, SiteKey, Zone } from '../lib/data'
-import { groupName, leaseItem, leaseItemSat, leasingStore, shortlistStore, useStore } from '../lib/store'
+import { fmt, useJson } from '../lib/data'
+import type { ScorePart } from '../lib/data'
+import { leaseItemSat, leasingStore, shortlistStore, useStore } from '../lib/store'
 import {
   CLASS_SHORT,
   groupScanned,
@@ -22,18 +21,15 @@ import {
   type TownshipMeta,
 } from '../lib/townships'
 
-type View = 'sat' | 'plan'
-
 /**
- * Roof map, three levels:
- *   /map                      Level 0: every SDP township on one map
- *   /map?t=<id>&scan=1        scan replay for one township
- *   /map?t=<id>[&site=][&view=][&zone=]   Level 1: one township (and Level 2: one master-plan zone)
+ * Roof map:
+ *   /map                          Level 0: every SDP township on one map
+ *   /map?t=<id>&scan=1            scan replay for one township
+ *   /map?t=<id>[&site=][&roof=]   Level 1: one township's roofs on satellite imagery
  * A site id in t (e.g. elmina-bp) opens its parent township on that site.
  */
 export default function RoofMap() {
   const { data: index, error } = useJson<TownshipIndex>('townships/index.json')
-  const { data: plan } = useJson<RoofsData>('roofs.json')
   const [params, setParams] = useSearchParams()
   const scanned = useStore(scannedStore)
   const groups = useMemo(() => (index ? townshipGroups(index) : []), [index])
@@ -42,43 +38,23 @@ export default function RoofMap() {
   if (!index) return <p className="text-muted">Loading townships…</p>
 
   const t = params.get('t')
-  const parentId = index?.townships.find((m) => m.id === t)?.parent
+  const parentId = index.townships.find((m) => m.id === t)?.parent
   const group = groups.find((g) => g.id === (parentId ?? t))
   if (!group) return <AllTownships index={index} groups={groups} scanned={scanned} selected={params.get('sel')} onPick={(id) => setParams({ sel: id }, { replace: true })} />
   if (params.get('scan')) return <ScanView group={group} onDone={() => setParams({ t: group.id })} onCancel={() => setParams({ sel: group.id })} />
 
-  // Business park first in the toggle, then homes
-  const sites = [...group.sites].sort((a, b) => Number(!!b.master_plan) - Number(!!a.master_plan))
+  // City of Elmina: Business park first in the toggle, then homes
+  const sites = [...group.sites].sort((a, b) => Number(b.site === 'Business park') - Number(a.site === 'Business park'))
   const site = sites.find((m) => m.id === (params.get('site') ?? (parentId ? t : null))) ?? sites[0]
-  const view: View = site.master_plan && params.get('view') !== 'sat' ? 'plan' : 'sat'
-  const zoneId = params.get('zone')
-  const go = (next: { site?: string; view?: View; zone?: string | null }) => {
-    const p = new URLSearchParams({ t: group.id })
-    const sid = next.site ?? site.id
-    if (sid !== sites[0].id) p.set('site', sid)
-    const target = sites.find((m) => m.id === sid)!
-    const v = next.view ?? (next.site ? 'plan' : view)
-    if (target.master_plan && v === 'sat') p.set('view', 'sat')
-    const z = next.zone === undefined ? zoneId : next.zone
-    if (z && target.master_plan && v === 'plan') p.set('zone', z)
-    setParams(p)
-  }
-
-  if (view === 'plan' && plan && zoneId) {
-    const zone = plan.sites.business_park.zones.find((z) => z.id === zoneId)
-    if (zone) return <ZoneView data={plan} site={plan.sites.business_park} siteKey="business_park" zone={zone} onBack={() => go({ zone: null })} />
-  }
 
   return (
     <TownshipView
       group={group}
       sites={sites}
       site={site}
-      view={view}
       scanned={groupScanned(group, scanned)}
       index={index}
-      plan={plan}
-      go={go}
+      onSite={(id) => setParams(id === sites[0].id ? { t: group.id } : { t: group.id, site: id })}
       onAll={() => setParams({ sel: group.id })}
       onScan={() => setParams({ t: group.id, scan: '1' })}
       initialRoof={params.get('roof')}
@@ -380,9 +356,9 @@ function ScanView({ group, onDone, onCancel }: { group: TownshipGroup; onDone: (
 
 /* ---------------- Level 1: one township ---------------- */
 
-function TownshipView({ group, sites, site, view, scanned, index, plan, go, onAll, onScan, initialRoof }: {
-  group: TownshipGroup; sites: TownshipMeta[]; site: TownshipMeta; view: View; scanned: boolean; index: TownshipIndex; plan: RoofsData | null
-  go: (next: { site?: string; view?: View; zone?: string | null }) => void; onAll: () => void; onScan: () => void; initialRoof: string | null
+function TownshipView({ group, sites, site, scanned, index, onSite, onAll, onScan, initialRoof }: {
+  group: TownshipGroup; sites: TownshipMeta[]; site: TownshipMeta; scanned: boolean; index: TownshipIndex
+  onSite: (id: string) => void; onAll: () => void; onScan: () => void; initialRoof: string | null
 }) {
   const build = useBuildPortfolio()
   return (
@@ -394,24 +370,17 @@ function TownshipView({ group, sites, site, view, scanned, index, plan, go, onAl
       <PageHeader
         eyebrow={`${group.name}, ${group.state}`}
         title="Roof map"
-        subtitle={view === 'sat' ? 'Every rooftop found in the satellite scan, coloured by score · click a roof · scores are sample data' : 'SDP master plan with planned zones · click a zone to zoom in · sample data'}
+        subtitle="Every rooftop found in the satellite scan, coloured by score · click a roof · scores are sample data"
         right={
           <>
             {sites.length > 1 && (
-              <Segmented label="Site" value={site.id} onChange={(id) => go({ site: id, zone: null })} options={sites.map((m) => ({ id: m.id, label: m.site ?? m.name }))} />
-            )}
-            {site.master_plan && (
-              <Segmented label="View" value={view} onChange={(v) => go({ view: v, zone: null })} options={[{ id: 'plan', label: 'Master plan' }, { id: 'sat', label: 'Satellite scan' }]} />
+              <Segmented label="Site" value={site.id} onChange={onSite} options={sites.map((m) => ({ id: m.id, label: m.site ?? m.name }))} />
             )}
             <button type="button" className="btn-primary !text-base" onClick={build}>Build portfolio</button>
           </>
         }
       />
-      {view === 'plan' ? (
-        plan ? <MasterPlan site={plan.sites.business_park} onZone={(z) => go({ zone: z.id })} /> : <p className="text-muted">Loading master plan…</p>
-      ) : (
-        <SatelliteView key={site.id} meta={site} scanned={scanned} onScan={onScan} source={index.source} minKwp={index.min_kwp} initialRoof={initialRoof} />
-      )}
+      <SatelliteView key={site.id} meta={site} scanned={scanned} onScan={onScan} source={index.source} minKwp={index.min_kwp} initialRoof={initialRoof} />
     </>
   )
 }
@@ -613,57 +582,9 @@ function SatRoofPanel({ roof, townshipName, onClose }: { roof: SatRoof; township
   )
 }
 
-/* ---------------- Master plan (Elmina Business Park) ---------------- */
-
-function MasterPlan({ site, onZone }: { site: Site; onZone: (z: Zone) => void }) {
-  const [hover, setHover] = useState<string | null>(null)
-  const best = [...site.zones].sort((a, b) => b.summary.avg_score - a.summary.avg_score).slice(0, 7)
-  return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
-      <section className="card p-5" aria-label="Master plan">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Master plan · average roof score per planned zone</h2>
-          <MapLegend />
-        </div>
-        <SiteMap site={site} onSelect={onZone} highlight={hover} />
-        <p className="mt-3 text-sm text-muted">
-          Base map: SDP master plan. Planned zones include buildings not yet visible in satellite imagery; zone roofs are sample data.
-        </p>
-      </section>
-      <aside>
-        <section className="card p-6" aria-labelledby="best-zones">
-          <h2 id="best-zones" className="text-lg font-semibold">Best zones to start with</h2>
-          <p className="mt-2 text-[15px] text-muted">Click a zone on the map or below to zoom in</p>
-          <ol className="mt-4 space-y-3">
-            {best.map((z) => (
-              <li key={z.id}>
-                <button type="button" onClick={() => onZone(z)} onMouseEnter={() => setHover(z.id)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(z.id)} onBlur={() => setHover(null)}
-                  className="flex w-full items-center gap-4 rounded-card border border-line px-4 py-3 text-left hover:border-primary/50 hover:bg-page">
-                  <ScoreBadge score={z.summary.avg_score} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">Zone {z.id}</span>
-                    <span className="block text-sm text-muted">{TYPE_PLURAL[z.type]} · {z.summary.n_roofs} roofs</span>
-                  </span>
-                  <span className="num text-sm">{fmt(z.summary.mwh_yr / 1000, 1)} GWh</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </aside>
-    </div>
-  )
-}
-
 function ScoreBadge({ score }: { score: number }) {
   const cls = score >= 80 ? 'bg-primary text-white' : score >= 70 ? 'bg-amber text-ink' : 'border border-ink/40 bg-card text-ink'
   return <span className={`grid h-11 w-14 shrink-0 place-items-center rounded-lg text-lg font-semibold num ${cls}`}>{Math.round(score)}</span>
-}
-
-const TILE: Record<string, string> = {
-  good: 'bg-primary text-white border-primary',
-  fair: 'bg-amber text-ink border-amber',
-  poor: 'bg-[#F6E1D8] text-warn border-warn/40',
 }
 
 const PART_LABEL: Record<ScorePart, string> = {
@@ -671,130 +592,4 @@ const PART_LABEL: Record<ScorePart, string> = {
   shading: 'Shade-free',
   condition: 'Roof condition',
   likelihood: 'Likelihood to sign',
-}
-
-function ZoneView({ data, site, siteKey, zone, onBack }: { data: RoofsData; site: Site; siteKey: SiteKey; zone: Zone; onBack: () => void }) {
-  const [roofId, setRoofId] = useState<string>(() => [...zone.roofs].sort((a, b) => b.score - a.score)[0].id)
-  const roof = zone.roofs.find((r) => r.id === roofId) ?? zone.roofs[0]
-  const s = zone.summary
-
-  return (
-    <>
-      <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-sm">
-        <button type="button" onClick={onBack} className="btn-ghost">
-          <span aria-hidden="true">←</span> Master plan
-        </button>
-        <span className="text-muted">/ Elmina Business Park · master plan /</span>
-        <span className="font-medium">{zone.id}</span>
-      </nav>
-      <PageHeader eyebrow={SITE_LABEL[siteKey]} title={groupName(zone)} subtitle={`${TYPE_PLURAL[zone.type]} · ${zone.rows} × ${zone.cols} roofs · sample data`} />
-
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Kpi label="Roofs" value={s.n_roofs} />
-        <Kpi label="Average score" value={fmt(s.avg_score)} unit="/100" />
-        <Kpi label="Good roofs (75+)" value={s.good_roofs} />
-        <Kpi label="Capacity" value={fmt(s.total_kwp)} unit="kWp" />
-        <Kpi label="Potential" value={fmt(s.mwh_yr)} unit="MWh/yr" />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6 min-w-0">
-          <section className="card p-4" aria-labelledby="roof-grid">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 id="roof-grid" className="font-semibold">Roofs in this zone</h2>
-              <ul className="flex gap-4 text-xs text-muted">
-                <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-primary" />75+</li>
-                <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-amber" />55–74</li>
-                <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm border border-warn/40 bg-[#F6E1D8]" />Below 55</li>
-              </ul>
-            </div>
-            <div className="overflow-x-auto pb-1">
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${zone.cols}, minmax(44px, 1fr))` }}>
-                {zone.roofs.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setRoofId(r.id)}
-                    aria-pressed={r.id === roof.id}
-                    aria-label={`Roof ${r.label}, score ${r.score}`}
-                    className={`min-h-touch rounded-md border text-xs font-semibold num ${TILE[scoreBand(r.score)]} ${
-                      r.id === roof.id ? 'ring-2 ring-ink ring-offset-2' : 'hover:brightness-95'
-                    }`}
-                  >
-                    {r.score}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-          <section className="card p-4" aria-labelledby="sat">
-            <h2 id="sat" className="mb-3 font-semibold">Satellite view</h2>
-            <ZoneCrop site={site} zone={zone} />
-            <p className="mt-2 text-xs text-muted">
-              {site.image ? 'Cropped from the master plan (Base map: Sime Darby Property). Satellite imagery in production.' : 'Illustrative layout.'}
-            </p>
-          </section>
-        </div>
-        <RoofPanel data={data} roof={roof} zone={zone} siteKey={siteKey} />
-      </div>
-    </>
-  )
-}
-
-function RoofPanel({ data, roof, zone, siteKey }: { data: RoofsData; roof: Roof; zone: Zone; siteKey: SiteKey }) {
-  const leasing = useStore(leasingStore)
-  const shortlist = useStore(shortlistStore)
-  const inLeasing = leasing.some((l) => l.roofId === roof.id)
-  const inShortlist = shortlist.includes(roof.id)
-
-  const addLeasing = () => leasingStore.set((l) => [...l, leaseItem(roof, zone, siteKey)])
-
-  return (
-    <aside className="card p-5 self-start xl:sticky xl:top-6" aria-labelledby="roof-title" aria-live="polite">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="label">Selected roof</div>
-          <h2 id="roof-title" className="mt-1 text-xl font-semibold num">{roof.label}</h2>
-          <p className="text-sm text-muted">{groupName(zone)} · {roof.owner} · roof {roof.roof_age_yrs} yrs old</p>
-        </div>
-        <div className="text-right">
-          <div className="text-3xl font-semibold num">{roof.score}</div>
-          <div className="text-xs text-muted">score / 100</div>
-        </div>
-      </div>
-
-      <h3 className="mt-5 text-sm font-semibold">Score breakdown</h3>
-      <ul className="mt-2 space-y-2.5">
-        {(Object.keys(data.weights) as ScorePart[]).map((k) => (
-          <li key={k}>
-            <div className="flex justify-between text-xs">
-              <span>{PART_LABEL[k]} <span className="text-muted">· {data.weights[k] * 100}%</span></span>
-              <span className="num">{roof.parts[k]}</span>
-            </div>
-            <div className="mt-1 h-2 rounded-full bg-page" role="presentation">
-              <div className={`h-2 rounded-full ${roof.parts[k] >= 75 ? 'bg-primary' : roof.parts[k] >= 55 ? 'bg-amber' : 'bg-warn'}`} style={{ width: `${roof.parts[k]}%` }} />
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <div><dt className="label">Roof area</dt><dd className="num">{fmt(roof.area_m2)} m²</dd></div>
-        <div><dt className="label">System size</dt><dd className="num">{fmt(roof.kwp, 1)} kWp</dd></div>
-        <div><dt className="label">Yield</dt><dd className="num">{fmt(roof.yield_kwh_kwp)} kWh/kWp</dd></div>
-        <div><dt className="label">Energy</dt><dd className="num">{fmt(roof.mwh_yr, 1)} MWh/yr</dd></div>
-      </dl>
-      <p className="mt-3 text-sm">{roof.headline}</p>
-      <p className="mt-1 text-xs text-muted">Owner notes: {roof.why.join(' · ')}</p>
-
-      <div className="mt-5 grid gap-2">
-        <button type="button" className="btn-primary" disabled={inShortlist} onClick={() => shortlistStore.set((s) => [...s, roof.id])}>
-          {inShortlist ? '✓ In portfolio shortlist' : 'Add to portfolio'}
-        </button>
-        <button type="button" className="btn-ghost" disabled={inLeasing} onClick={addLeasing}>
-          {inLeasing ? '✓ On leasing list' : 'Add to leasing list'}
-        </button>
-      </div>
-    </aside>
-  )
 }

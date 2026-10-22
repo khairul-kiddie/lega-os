@@ -25,7 +25,7 @@ export default function Resident() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted">Good morning</p>
-            <p className="font-semibold">Precinct 4 · No. 12</p>
+            <p className="font-semibold">City of Elmina · House [X]</p>
           </div>
           <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white">LEGA</span>
         </div>

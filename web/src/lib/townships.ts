@@ -28,7 +28,6 @@ export interface TownshipMeta {
   /** township outline(s) as [lat, lng] rings: OpenStreetMap boundary, or an approximate box */
   outline: [number, number][][]
   extent: 'osm' | 'approx'
-  master_plan: string | null
   /** Township this site belongs to on the Roof map (Elmina Business Park → City of Elmina). */
   parent?: string | null
   /** Label in the Business park | Homes toggle. */
@@ -75,7 +74,7 @@ interface TownshipFile {
 
 export const SOURCE_LABEL: Record<string, string> = { o: 'OpenStreetMap', g: 'Google Open Buildings', m: 'Microsoft ML footprints', x: 'Other' }
 
-/** One detected roof, shaped like the master-plan Roof so panels and leasing can share it. */
+/** One detected roof. */
 export interface SatRoof extends Roof {
   cls: RoofClass
   units: number
@@ -109,8 +108,6 @@ export function loadRoofs(id: string): Promise<SatRoof[]> {
           return {
             id: rid,
             label: `${CLASS_SHORT[cls]} ${rid.slice(rid.lastIndexOf('-') + 1)}`,
-            row: 0,
-            col: 0,
             score: f.score[i],
             parts,
             area_m2: f.area[i],
@@ -170,7 +167,7 @@ export function townshipGroups(index: TownshipIndex): TownshipGroup[] {
 
 /** Link to one roof on the satellite map. Works for sites inside a township (Elmina Business Park). */
 export const roofHref = (townshipId: string, roofId: string) =>
-  `/map?t=${townshipId}&site=${townshipId}&view=sat&roof=${encodeURIComponent(roofId)}`
+  `/map?t=${townshipId}&site=${townshipId}&roof=${encodeURIComponent(roofId)}`
 
 /** Townships this browser has scanned. Two are pre-scanned so the map is never empty on first load. */
 export const scannedStore = createStore<string[]>('lega.scanned.v2', ['elmina', 'elmina-bp'])

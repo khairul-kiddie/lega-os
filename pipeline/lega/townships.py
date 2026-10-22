@@ -25,7 +25,7 @@ import numpy as np
 import requests
 
 from .config import RAW, WEB_DATA
-from .roofs import LIKELIHOOD_BASE, WEIGHTS, headline, likelihood, yield_score
+from .scoring import LIKELIHOOD_BASE, WEIGHTS, headline, likelihood, yield_score
 from .simulate import annual_yield
 
 OVERTURE = RAW / "overture"
@@ -44,7 +44,7 @@ M_PER_DEG_LAT = 110_574
 TOWNSHIPS = [
     {"id": "elmina", "name": "City of Elmina", "state": "Selangor", "osm": ["W866543395"], "site": "Homes"},
     {"id": "elmina-bp", "name": "Elmina Business Park", "state": "Selangor", "osm": ["R18576647", "R19844740"],
-     "master_plan": "elmina-business-park.jpg", "parent": "elmina", "site": "Business park"},
+     "parent": "elmina", "site": "Business park"},
     {"id": "bukit-raja", "name": "Bandar Bukit Raja", "state": "Selangor", "osm": ["R19844690"]},
     {"id": "serenia", "name": "Serenia City", "state": "Selangor", "osm": ["R14186975"]},
     # no mapped outline in OSM (only a point): ~2.4 km box around the geocoded centre
@@ -272,7 +272,7 @@ def scan(t: dict) -> dict:
         xy = [(x * 1e5, y * 1e5) for x, y in p[0]]
         draw.append([[round(y / 1e5, 5), round(x / 1e5, 5)] for x, y in simplify_ring(xy, 2.0)])
     meta = {"id": t["id"], "name": t["name"], "state": t["state"], "bbox": [s, n, w, e], "extent": "osm" if "osm" in t else "approx",
-            "osm": t.get("osm"), "outline": draw, **{k: t.get(k) for k in ("master_plan", "parent", "site")}}
+            "osm": t.get("osm"), "outline": draw, **{k: t.get(k) for k in ("parent", "site")}}
     data = {**meta, "sample": True, "origin": [ox, oy], "kx": kx, "ky": M_PER_DEG_LAT, "weights": list(WEIGHTS), "class_label": CLASS_LABEL, **cols}
     return {"meta": {**meta, "summary": summary}, "data": data}
 

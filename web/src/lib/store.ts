@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react'
-import type { Roof, Zone } from './data'
 import type { SatRoof } from './townships'
 
 // Tiny localStorage-backed stores. Every storage access is wrapped: private windows
@@ -48,7 +47,7 @@ export type LeaseStatus = 'to_approach' | 'visited' | 'interested' | 'signed' | 
 export interface LeaseItem {
   roofId: string
   label: string
-  /** "Precinct 2", "Zone i41" or a township name. */
+  /** Township name. */
   group: string
   site: string
   score: number
@@ -59,15 +58,6 @@ export interface LeaseItem {
   portfolioId?: string
 }
 
-export const groupName = (zone: Zone) => (zone.id.startsWith('Precinct') ? zone.id : `Zone ${zone.id}`)
-
-export function leaseItem(roof: Roof, zone: Zone, site: string, portfolioId?: string, status: LeaseStatus = 'to_approach'): LeaseItem {
-  return {
-    roofId: roof.id, label: roof.label, group: groupName(zone), site, score: roof.score, mwh_yr: roof.mwh_yr,
-    headline: roof.headline, status, addedAt: new Date().toISOString(), portfolioId,
-  }
-}
-
 export function leaseItemSat(roof: SatRoof, townshipName: string, portfolioId?: string, status: LeaseStatus = 'to_approach'): LeaseItem {
   return {
     roofId: roof.id, label: roof.label, group: townshipName, site: roof.township, score: roof.score, mwh_yr: roof.mwh_yr,
@@ -76,5 +66,5 @@ export function leaseItemSat(roof: SatRoof, townshipName: string, portfolioId?: 
 }
 
 // v2: roof ids changed (unique lot numbers for homes)
-export const leasingStore = createStore<LeaseItem[]>('lega.leasing.v4', [])
-export const shortlistStore = createStore<string[]>('lega.shortlist.v3', [])
+export const leasingStore = createStore<LeaseItem[]>('lega.leasing.v5', [])
+export const shortlistStore = createStore<string[]>('lega.shortlist.v4', [])
