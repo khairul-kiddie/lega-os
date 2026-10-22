@@ -39,3 +39,21 @@ def test_sites_group_under_an_existing_township():
         if m.get("parent"):
             assert m["parent"] in ids and m["parent"] != m["id"]
             assert m.get("site"), "a grouped site needs a toggle label"
+
+
+@pytest.mark.parametrize("meta", INDEX["townships"], ids=lambda m: m["id"])
+def test_every_roof_lies_inside_the_township_outline(meta):
+    """Regression: the scan used to take every building in the bounding box, which pulled
+    neighbouring villages (e.g. Kampung Kubu Gajah) into City of Elmina."""
+    from lega.townships import TOWNSHIPS, in_outline, outline
+
+    polys = outline(next(t for t in TOWNSHIPS if t["id"] == meta["id"]))
+    d = json.loads((DIR / f"{meta['id']}.json").read_text())
+    assert all(in_outline(x, y, polys) for x, y in zip(d["cx"], d["cy"]))
+
+
+def test_elmina_excludes_kampung_kubu_gajah():
+    # Kampung Kubu Gajah, OSM way 708366159, lies north-east of Elmina's outline (lat 3.188–3.213, lon 101.508–101.530)
+    d = json.loads((DIR / "elmina.json").read_text())
+    in_kubu_core = sum(3.195 <= y <= 3.21 and 101.512 <= x <= 101.527 for x, y in zip(d["cx"], d["cy"]))
+    assert in_kubu_core == 0

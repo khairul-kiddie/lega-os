@@ -35,7 +35,7 @@ function nextStep(r: LeaseItem): string {
   }
 }
 
-const SEEDED_KEY = 'lega.leasing.seeded.v3'
+const SEEDED_KEY = 'lega.leasing.seeded.v4'
 
 export default function Leasing() {
   const items = useStore(leasingStore)

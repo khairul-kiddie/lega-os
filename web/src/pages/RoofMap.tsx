@@ -246,7 +246,7 @@ const SCAN_MS = 6000
 const TILES = 48 // 8 × 6 imagery tiles over the map
 const STEPS = [
   { from: 0, to: 0.15, title: 'Fetch imagery', source: 'Sentinel-2 + high-res tiles, or an SDP drone survey · prototype: Esri World Imagery' },
-  { from: 0.15, to: 0.5, title: 'Detect buildings', source: 'GeoAI segmentation, checked against Microsoft and Google open building footprints · prototype: Microsoft footprints' },
+  { from: 0.15, to: 0.5, title: 'Detect buildings', source: 'GeoAI segmentation, checked against Microsoft and Google open building footprints · prototype: Overture buildings (OpenStreetMap + Google + Microsoft), clipped to the township outline' },
   { from: 0.5, to: 0.62, title: 'Estimate heights and shading', source: 'Google Open Buildings 2.5D + sun path · prototype: sample shading' },
   { from: 0.62, to: 0.76, title: 'Simulate yield', source: 'pvlib + NASA POWER weather for this township (real)' },
   { from: 0.76, to: 1, title: 'Score every roof', source: '40% yield · 20% shading · 20% roof condition · 20% likelihood to sign' },
@@ -266,7 +266,7 @@ function ScanView({ group, onDone, onCancel }: { group: TownshipGroup; onDone: (
   const meta: TownshipMeta = useMemo(() => {
     const b = group.sites.map((m) => m.bbox)
     const bbox: TownshipMeta['bbox'] = [Math.min(...b.map((x) => x[0])), Math.max(...b.map((x) => x[1])), Math.min(...b.map((x) => x[2])), Math.max(...b.map((x) => x[3]))]
-    return { ...group.sites[0], bbox }
+    return { ...group.sites[0], bbox, outline: group.sites.flatMap((m) => m.outline) }
   }, [group])
 
   useEffect(() => {
@@ -492,7 +492,7 @@ function SatelliteView({ meta, scanned, onScan, source, minKwp, initialRoof }: {
               <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: SAT_COLORS.good }} />Score 75+</li>
               <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: SAT_COLORS.fair }} />55–74</li>
               <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: SAT_COLORS.poor }} />Below 55</li>
-              <li className="flex items-center gap-1.5"><span className="h-0 w-4 border-t-2 border-dashed border-muted" />Township extent{meta.extent === 'approx' ? ' (approx.)' : ''}</li>
+              <li className="flex items-center gap-1.5"><span className="h-0 w-4 border-t-2 border-dashed border-muted" />Township outline{meta.extent === 'approx' ? ' (approx. box)' : ''}</li>
             </ul>
           </div>
           <div className="relative">
@@ -510,8 +510,9 @@ function SatelliteView({ meta, scanned, onScan, source, minKwp, initialRoof }: {
             )}
           </div>
           <p className="mt-3 text-sm text-muted">
-            Imagery: Esri World Imagery. Roof outlines: {source}; they reflect the imagery date, so recent construction may be missing. Township
-            extent: {meta.extent === 'osm' ? 'OpenStreetMap boundary' : 'approximate box around the township centre (OpenStreetMap)'}. Yield is real
+            Imagery: Esri World Imagery. Roof outlines: {source}; only buildings inside the township outline count, and outlines reflect each
+            source’s imagery date, so the newest construction may be missing. Township outline:{' '}
+            {meta.extent === 'osm' ? 'OpenStreetMap boundary' : 'approximate box around the township centre (no mapped boundary)'}. Yield is real
             (pvlib on NASA POWER, {fmt(s.yield_kwh_kwp)} kWh/kWp/yr here); shading, roof condition and owner data are sample data.
           </p>
         </section>
@@ -550,7 +551,10 @@ function SatelliteView({ meta, scanned, onScan, source, minKwp, initialRoof }: {
                   <li key={c} className="flex justify-between"><span>{c === 'large' ? 'Factories / large flat roofs' : c === 'medium' ? 'Shophouses / mid-size' : c === 'terrace' ? 'Terrace rows' : 'Houses'}</span><span className="num">{fmt(s.by_class[c])}</span></li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs text-muted">Roof type is estimated from footprint size and shape.</p>
+              <p className="mt-3 text-xs text-muted">
+                Roof type is estimated from footprint size and shape. Outlines from{' '}
+                {Object.entries(s.by_source).map(([k, v]) => `${k} (${fmt(v)})`).join(', ')}.
+              </p>
             </section>
           )}
           <p className="rounded-card bg-amber-soft px-5 py-4 text-[15px] leading-relaxed">
@@ -598,6 +602,7 @@ function SatRoofPanel({ roof, townshipName, onClose }: { roof: SatRoof; township
         <div><dt className="label">Energy</dt><dd className="num">{fmt(roof.mwh_yr, 1)} MWh/yr</dd></div>
       </dl>
       <p className="mt-3 text-sm">{roof.headline}</p>
+      <p className="mt-1 text-xs text-muted">Roof outline: {roof.source}</p>
       <div className="mt-4 grid gap-2">
         <button type="button" className="btn-primary" disabled={inShortlist} onClick={() => shortlistStore.set((s) => [...s, roof.id])}>
           {inShortlist ? '✓ In portfolio shortlist' : 'Add to portfolio'}

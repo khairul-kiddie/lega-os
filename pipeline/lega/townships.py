@@ -1,6 +1,9 @@
 """Scan SDP townships: real building footprints -> solar-ready roofs -> per-township JSON.
 
-Detect:   Microsoft Global ML Building Footprints (Malaysia, ODbL), cached in data/raw/footprints/.
+Extent:   the township's OpenStreetMap outline (cached in data/raw/outlines/); a building counts
+          if its centre lies inside. Townships without a mapped outline use an approximate box.
+Detect:   Overture Maps buildings (conflated OpenStreetMap + Google Open Buildings + Microsoft ML
+          footprints), pinned release, cached in data/raw/overture/.
 Size:     roof area from the footprint polygon; usable panel area by roof class.
 Classify: size/shape heuristic (house, terrace row, medium building, large flat roof).
 Simulate: pvlib PVWatts on each township's own NASA POWER cell (real).
@@ -10,12 +13,13 @@ Score:    same 40/20/20/20 formula as roofs.py. Shading, roof condition and owne
 Output: web/public/data/townships/index.json and one <id>.json per township, columnar to keep
 files small (loaded only when a township is opened).
 """
-import csv
-import gzip
 import hashlib
-import io
 import json
 import math
+import subprocess
+import sys
+import time
+from pathlib import Path
 
 import numpy as np
 import requests
@@ -24,8 +28,12 @@ from .config import RAW, WEB_DATA
 from .roofs import LIKELIHOOD_BASE, WEIGHTS, headline, likelihood, yield_score
 from .simulate import annual_yield
 
-FOOTPRINTS = RAW / "footprints"
+OVERTURE = RAW / "overture"
+OUTLINES = RAW / "outlines"
+OVERTURE_RELEASE = "2026-10-21.0"
 OUT = WEB_DATA / "townships"
+SRC_CODE = {"OpenStreetMap": "o", "Google Open Buildings": "g", "Microsoft ML Buildings": "m"}
+SRC_LABEL = {"o": "OpenStreetMap", "g": "Google Open Buildings", "m": "Microsoft ML Buildings", "x": "Other"}
 M_PER_DEG_LAT = 110_574
 
 # Township list and locations: confirm against SDP's official township list before relying on it.
@@ -34,17 +42,17 @@ M_PER_DEG_LAT = 110_574
 # Extents: OpenStreetMap (Nominatim) boundaries where the township is mapped as an area,
 # otherwise a ~2.4 km box around the geocoded centre ("approx").
 TOWNSHIPS = [
-    {"id": "elmina", "name": "City of Elmina", "state": "Selangor", "bbox": [3.1603, 3.2135, 101.4925, 101.5289], "extent": "osm", "tile": "132232022",
-     "site": "Homes"},
-    {"id": "elmina-bp", "name": "Elmina Business Park", "state": "Selangor", "bbox": [3.2212, 3.2490, 101.5081, 101.5284], "extent": "osm", "tile": "132232022",
+    {"id": "elmina", "name": "City of Elmina", "state": "Selangor", "osm": ["W866543395"], "site": "Homes"},
+    {"id": "elmina-bp", "name": "Elmina Business Park", "state": "Selangor", "osm": ["R18576647", "R19844740"],
      "master_plan": "elmina-business-park.jpg", "parent": "elmina", "site": "Business park"},
-    {"id": "bukit-raja", "name": "Bandar Bukit Raja", "state": "Selangor", "bbox": [3.0760, 3.1116, 101.4121, 101.4687], "extent": "osm", "tile": "132232022"},
-    {"id": "serenia", "name": "Serenia City", "state": "Selangor", "bbox": [2.8415, 2.8615, 101.6946, 101.7117], "extent": "osm", "tile": "132232022"},
-    {"id": "ara-damansara", "name": "Ara Damansara", "state": "Selangor", "bbox": [3.0970, 3.1190, 101.5760, 101.5980], "extent": "approx", "tile": "132232022"},
-    {"id": "putra-heights", "name": "Putra Heights", "state": "Selangor", "bbox": [2.9850, 3.0070, 101.5640, 101.5860], "extent": "approx", "tile": "132232022"},
-    {"id": "nilai-impian", "name": "Nilai Impian", "state": "Negeri Sembilan", "bbox": [2.8310, 2.8530, 101.7970, 101.8190], "extent": "approx", "tile": "132232022"},
-    {"id": "ainsdale", "name": "Bandar Ainsdale", "state": "Negeri Sembilan", "bbox": [2.7201, 2.7410, 101.8825, 101.8987], "extent": "osm", "tile": "132232200"},
-    {"id": "pagoh", "name": "Bandar Universiti Pagoh", "state": "Johor", "bbox": [2.1330, 2.1725, 102.7144, 102.7454], "extent": "osm", "tile": "132232210"},
+    {"id": "bukit-raja", "name": "Bandar Bukit Raja", "state": "Selangor", "osm": ["R19844690"]},
+    {"id": "serenia", "name": "Serenia City", "state": "Selangor", "osm": ["R14186975"]},
+    # no mapped outline in OSM (only a point): ~2.4 km box around the geocoded centre
+    {"id": "ara-damansara", "name": "Ara Damansara", "state": "Selangor", "bbox": [3.0970, 3.1190, 101.5760, 101.5980]},
+    {"id": "putra-heights", "name": "Putra Heights", "state": "Selangor", "osm": ["R11911049"]},
+    {"id": "nilai-impian", "name": "Nilai Impian", "state": "Negeri Sembilan", "osm": ["W1079443925"]},
+    {"id": "ainsdale", "name": "Bandar Ainsdale", "state": "Negeri Sembilan", "osm": ["R17831572"]},
+    {"id": "pagoh", "name": "Bandar Universiti Pagoh", "state": "Johor", "osm": ["W865557126"]},
 ]
 
 # usable panel share of the roof footprint and kWp per m² of panel area
@@ -61,20 +69,59 @@ OWNERS = {
 assert all(o in LIKELIHOOD_BASE for v in OWNERS.values() for o, _ in v)
 
 
-LINKS = "https://minedbuildings.z5.web.core.windows.net/global-buildings/dataset-links.csv"
+UA = {"User-Agent": "lega-os-prototype/1.0 (SDP hackathon; github.com/khairul-kiddie/lega-os)"}
 
 
-def ensure_tile(quadkey: str):
-    """Download one Malaysia footprint tile (zoom-9 quadkey) if it isn't cached. Tiles are large and git-ignored."""
-    path = FOOTPRINTS / f"{quadkey}.csv.gz"
+def outline(t: dict) -> list[list[list[list[float]]]]:
+    """Township outline as a list of polygons, each [outer ring, *holes] in [lon, lat].
+    Fetched once from OpenStreetMap (Nominatim) and cached so reruns are offline."""
+    if "osm" not in t:
+        s, n, w, e = t["bbox"]
+        return [[[[w, s], [e, s], [e, n], [w, n], [w, s]]]]
+    OUTLINES.mkdir(parents=True, exist_ok=True)
+    path = OUTLINES / f"{t['id']}.geojson"
+    if not path.exists():
+        r = requests.get("https://nominatim.openstreetmap.org/lookup", headers=UA, timeout=60,
+                         params={"osm_ids": ",".join(t["osm"]), "format": "geojson", "polygon_geojson": 1})
+        r.raise_for_status()
+        path.write_text(r.text)
+        time.sleep(1.1)  # Nominatim usage policy: max 1 request/s
+    polys = []
+    for f in json.loads(path.read_text())["features"]:
+        g = f["geometry"]
+        polys += [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"] if g["type"] == "MultiPolygon" else []
+    assert polys, f"no polygon outline for {t['id']}"
+    return polys
+
+
+def in_ring(x: float, y: float, ring) -> bool:
+    c = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            c = not c
+    return c
+
+
+def in_outline(x: float, y: float, polys) -> bool:
+    return any(in_ring(x, y, p[0]) and not any(in_ring(x, y, h) for h in p[1:]) for p in polys)
+
+
+def outline_bbox(polys) -> list[float]:
+    xs = [pt[0] for p in polys for pt in p[0]]
+    ys = [pt[1] for p in polys for pt in p[0]]
+    return [min(ys), max(ys), min(xs), max(xs)]
+
+
+def buildings(t: dict, bbox: list[float]) -> Path:
+    """Overture buildings for the outline's bounding box (pinned release), cached. Large: git-ignored."""
+    path = OVERTURE / f"{t['id']}_{OVERTURE_RELEASE}.geojsonseq"
     if path.exists():
         return path
-    FOOTPRINTS.mkdir(parents=True, exist_ok=True)
-    rows = csv.DictReader(io.StringIO(requests.get(LINKS, timeout=60).text))
-    url = next(r["Url"] for r in rows if r["Location"] == "Malaysia" and r["QuadKey"] == quadkey)
-    r = requests.get(url, timeout=600)
-    r.raise_for_status()
-    path.write_bytes(r.content)
+    OVERTURE.mkdir(parents=True, exist_ok=True)
+    s, n, w, e = bbox
+    cli = Path(sys.executable).with_name("overturemaps")
+    subprocess.run([str(cli), "download", f"--bbox={w},{s},{e},{n}", "-f", "geojsonseq", "--type=building",
+                    "-r", OVERTURE_RELEASE, "-o", str(path)], check=True)
     return path
 
 
@@ -143,26 +190,39 @@ def rng_for(rid: str) -> np.random.Generator:
 
 
 def scan(t: dict) -> dict:
-    s, n, w, e = t["bbox"]
+    polys = outline(t)
+    s, n, w, e = outline_bbox(polys)
     lat0 = (s + n) / 2
     site_yield = annual_yield(lat0, (w + e) / 2)
-    feats = []
-    with gzip.open(ensure_tile(t["tile"]), "rt") as fh:
+    feats, srcs = [], []
+    with open(buildings(t, [s, n, w, e])) as fh:
         for line in fh:
             f = json.loads(line)
-            ring = f["geometry"]["coordinates"][0]
-            lon, lat = ring[0]
-            if s <= lat <= n and w <= lon <= e:
-                feats.append(ring)
+            g = f["geometry"]
+            if g["type"] == "MultiPolygon":  # keep the largest part
+                g = {"coordinates": max(g["coordinates"], key=lambda p: len(p[0]))}
+            elif g["type"] != "Polygon":
+                continue
+            ring = g["coordinates"][0]
+            if len(ring) < 4:
+                continue
+            cx = sum(p[0] for p in ring[:-1]) / (len(ring) - 1)
+            cy = sum(p[1] for p in ring[:-1]) / (len(ring) - 1)
+            if not in_outline(cx, cy, polys):
+                continue
+            feats.append(ring)
+            srcs.append(SRC_CODE.get((f["properties"].get("sources") or [{}])[0].get("dataset"), "x"))
 
     ox, oy = w, s  # local origin for compact integer coords (decimetres)
     kx = M_PER_DEG_LAT * math.cos(math.radians(lat0))
-    cols = {k: [] for k in ("id", "cls", "poly", "area", "kwp", "mwh", "score", "parts", "units", "spec", "shade", "age", "lease", "owner", "headline", "why", "cx", "cy")}
+    cols = {k: [] for k in ("id", "cls", "poly", "area", "kwp", "mwh", "score", "parts", "units", "spec", "shade", "age", "lease", "owner", "headline", "why", "cx", "cy", "src")}
     n_all = 0
-    for i, ring in enumerate(sorted(feats, key=lambda r: (round(r[0][1], 4), r[0][0]))):
+    n_src = {}
+    for i, (ring, src) in enumerate(sorted(zip(feats, srcs), key=lambda rs: (round(rs[0][0][1], 4), rs[0][0][0]))):
         xy = to_xy(ring, lat0)
         a = area_m2(xy)
         n_all += 1
+        n_src[src] = n_src.get(src, 0) + 1
         rw, rh = min_rect(xy)
         cls = classify(a, rw, rh)
         usable = a * USABLE[cls]
@@ -190,7 +250,7 @@ def scan(t: dict) -> dict:
                      ("score", score), ("parts", [round(parts[k]) for k in WEIGHTS]), ("units", max(1, round(a / 110)) if cls == "terrace" else 1),
                      ("spec", round(spec)), ("shade", round(shade_loss, 1)), ("age", age), ("lease", years_left), ("owner", owner),
                      ("headline", headline(parts, shade_loss, age, owner, attended, years_left)), ("why", why),
-                     ("cx", round(cx, 6)), ("cy", round(cy, 6))):
+                     ("cx", round(cx, 6)), ("cy", round(cy, 6)), ("src", src)):
             cols[k].append(v)
 
     scores = np.array(cols["score"])
@@ -203,9 +263,16 @@ def scan(t: dict) -> dict:
         "mwh_yr": round(float(mwh.sum()), 1), "kwp": round(float(sum(cols["kwp"])), 1),
         "avg_score": round(float(scores.mean()), 1) if len(scores) else 0, "by_class": by_cls,
         "yield_kwh_kwp": round(site_yield, 1),
+        "by_source": {SRC_LABEL[k]: v for k, v in sorted(n_src.items(), key=lambda kv: -kv[1])},
         "owners_for_1gwh": int(np.searchsorted(np.cumsum(mwh[np.argsort(-scores)]), 1000) + 1) if mwh.sum() >= 1000 else None,
     }
-    meta = {k: t.get(k) for k in ("id", "name", "state", "bbox", "extent", "master_plan", "parent", "site")}
+    # simplified outline for drawing: [[ [lat, lng], ... ], ...] outer rings only
+    draw = []
+    for p in polys:
+        xy = [(x * 1e5, y * 1e5) for x, y in p[0]]
+        draw.append([[round(y / 1e5, 5), round(x / 1e5, 5)] for x, y in simplify_ring(xy, 2.0)])
+    meta = {"id": t["id"], "name": t["name"], "state": t["state"], "bbox": [s, n, w, e], "extent": "osm" if "osm" in t else "approx",
+            "osm": t.get("osm"), "outline": draw, **{k: t.get(k) for k in ("master_plan", "parent", "site")}}
     data = {**meta, "sample": True, "origin": [ox, oy], "kx": kx, "ky": M_PER_DEG_LAT, "weights": list(WEIGHTS), "class_label": CLASS_LABEL, **cols}
     return {"meta": {**meta, "summary": summary}, "data": data}
 
@@ -222,8 +289,8 @@ def run():
               f"{sm['mwh_yr'] / 1000:6.1f} GWh/yr  yield {sm['yield_kwh_kwp']}  {(OUT / (t['id'] + '.json')).stat().st_size // 1024} KB")
     (OUT / "index.json").write_text(json.dumps({
         "sample": True,
-        "_note": "Footprints: Microsoft Global ML Building Footprints (ODbL). Yield: pvlib on NASA POWER per township. Shading, condition and owner attributes are SAMPLE data.",
-        "source": "Microsoft Global ML Building Footprints (Malaysia, 2026-02 release), ODbL",
+        "_note": "Footprints: Overture Maps buildings (ODbL), clipped to each township's OpenStreetMap outline. Yield: pvlib on NASA POWER per township. Shading, condition and owner attributes are SAMPLE data.",
+        "source": f"Overture Maps buildings, release {OVERTURE_RELEASE} (OpenStreetMap, Google Open Buildings, Microsoft ML footprints; ODbL)",
         "list_note": "Township list and locations are approximate (OpenStreetMap); confirm against SDP's official township list.",
         "min_kwp": MIN_KWP, "townships": index}, indent=1, ensure_ascii=False))
 

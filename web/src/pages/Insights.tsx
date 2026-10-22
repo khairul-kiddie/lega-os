@@ -338,7 +338,7 @@ function RoofPipeline({ siteYield, y, roof, home, townshipMedian }: { siteYield:
             )}
           </svg>
           )}
-          <p className="mt-4 text-sm text-muted">Input: satellite imagery. Roof outline from Microsoft’s ML building footprints (real); usable area estimated by roof type.</p>
+          <p className="mt-4 text-sm text-muted">Input: satellite imagery. Roof outline from open building data via Overture Maps (real); usable area estimated by roof type.</p>
           <Stats rows={[['Roof area', `${fmt(roof.area_m2)} m²`], ['Usable for panels', `${fmt(roof.usable_m2)} m²`], [roof.aspect === 'Flat roof' || roof.aspect === 'Pitched roof' ? 'Roof type' : 'Best plane faces', roof.aspect.replace(' (low-pitch metal deck)', '')]]} />
         </StepCard>
 
@@ -387,7 +387,7 @@ function RoofPipeline({ siteYield, y, roof, home, townshipMedian }: { siteYield:
         <div>
           <h2 className="text-lg font-semibold">Model confidence</h2>
           <p className="mt-2 text-[15px] leading-relaxed">
-            Roof outlines are real (Microsoft ML footprints); roof type is estimated from size and shape and will be checked against [X] hand-labelled Elmina roofs: [XX]% match. Yield is checked against the 1,100–1,500 kWh/kWp
+            Roof outlines are real (Overture Maps: OpenStreetMap, Google and Microsoft footprints); roof type is estimated from size and shape and will be checked against [X] hand-labelled Elmina roofs: [XX]% match. Yield is checked against the 1,100–1,500 kWh/kWp
             range typical for Peninsular Malaysia rooftops ({fmt(siteYield)} here passes). Shading and condition are sample
             data (the footprints have no building heights); likelihood to sign is rule-based until SDP shares lease data.
           </p>

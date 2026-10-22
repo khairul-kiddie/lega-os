@@ -5,7 +5,7 @@ import type { SatRoof, TownshipMeta } from '../lib/townships'
 
 const IMAGERY = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 const LABELS = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
-const ATTRIBUTION = 'Imagery © Esri, Maxar, Earthstar Geographics · Building footprints © Microsoft (ODbL)'
+const ATTRIBUTION = 'Imagery © Esri, Maxar, Earthstar Geographics · Buildings © Overture Maps, OpenStreetMap contributors, Google, Microsoft (ODbL) · Outlines © OpenStreetMap'
 
 // Bright fills that stay readable on top of satellite imagery.
 export const SAT_COLORS = { good: '#2BD18A', fair: '#F2B33D', poor: '#E8643F' }
@@ -77,8 +77,8 @@ export default function SatMap({ meta, roofs, scan, selectedId, onSelect, focusK
     g.clearLayers()
     polys.current.clear()
     phases.current.clear()
-    const [s, n, w, e] = meta.bbox
-    L.rectangle([[s, w], [n, e]], { color: '#FFFFFF', weight: 1.5, dashArray: '6 6', fill: false, interactive: false }).addTo(g)
+    // township outline (OSM boundary, or an approximate box), not the bounding box
+    for (const ring of meta.outline) L.polygon(ring, { color: '#FFFFFF', weight: 2, dashArray: '6 6', fill: false, interactive: false }).addTo(g)
     const renderer = L.canvas({ padding: 0.5 })
     for (const r of roofs) {
       const p = L.polygon(r.ring, { renderer, color: fill(r.score), weight: 1.2, fillColor: fill(r.score), fillOpacity: 0.55, opacity: 1 })

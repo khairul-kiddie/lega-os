@@ -28,9 +28,9 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Solar yield per kWp, monthly profile | **Real (simulated)** | pvlib PVWatts model run on NASA POWER data |
 | Archived weather forecasts 2017–2025 | **Real** | [Open-Meteo](https://open-meteo.com/) Historical Forecast API and Previous Runs API |
 | Forecast model, backtest, live 14-day forecast | **Real** | LightGBM quantile models, Open-Meteo forecast API |
-| Roof outlines and roof areas in 9 SDP townships (17,000+ buildings) | **Real** | [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints), Malaysia, 2026-02 release (ODbL) |
+| Roof outlines and roof areas in 9 SDP townships (21,900+ buildings) | **Real** | [Overture Maps buildings](https://docs.overturemaps.org/guides/buildings/), release 2026-10-21.0 (ODbL): conflated OpenStreetMap, Google Open Buildings and Microsoft ML footprints. Each roof records which source it came from |
 | Satellite imagery under the roofs | **Real** | Esri World Imagery tiles (with attribution) |
-| Township extents | Real / approximate | OpenStreetMap boundaries via Nominatim. Ara Damansara, Putra Heights and Nilai Impian use a ~2.4 km box around the geocoded centre |
+| Township outlines | Real / approximate | OpenStreetMap boundary polygons via Nominatim, cached in `pipeline/data/raw/outlines/`. A building counts only if its centre is inside the outline. Ara Damansara has no mapped boundary, so it uses a ~2.4 km box around the geocoded centre |
 | Yield per township | **Real (simulated)** | pvlib on each township's own NASA POWER cell (1,284–1,320 kWh/kWp/yr) |
 | Roof type (house / terrace row / mid-size / factory), usable panel area | Estimated | Size-and-shape rule on the real footprint |
 | Shading, roof condition, owner type, likelihood to sign | **Sample** | Fixed seed per roof. The footprints have no building heights, so shading can't be computed yet |
@@ -64,7 +64,7 @@ The township list is in `pipeline/lega/townships.py` (`TOWNSHIPS`). Locations co
 | Step | Production source | Prototype |
 |---|---|---|
 | Fetch imagery | Sentinel-2 + high-res tiles, or an SDP drone survey | Esri World Imagery |
-| Detect buildings | GeoAI segmentation, checked against Microsoft and Google open building footprints | Microsoft footprints |
+| Detect buildings | GeoAI segmentation, checked against Microsoft and Google open building footprints | Overture buildings, clipped to the township outline |
 | Estimate heights and shading | Google Open Buildings 2.5D + sun path | Sample shading |
 | Simulate yield | pvlib + NASA POWER | Same (real) |
 | Score every roof | 40/20/20/20 formula | Same |
@@ -81,20 +81,23 @@ The work is precomputed by `python -m lega.townships`; the animation replays it,
 
 | Township | Buildings detected | Solar-ready roofs | Good roofs (75+) | Potential, GWh/yr |
 |---|---|---|---|---|
-| City of Elmina | 5,401 | 4,697 | 2,344 | 170.1 |
-| Elmina Business Park | 296 | 242 | 127 | 10.4 |
-| Bandar Bukit Raja | 4,518 | 3,864 | 1,985 | 399.5 |
-| Serenia City | 632 | 494 | 251 | 17.2 |
-| Ara Damansara | 1,423 | 1,259 | 666 | 133.7 |
-| Putra Heights | 1,876 | 1,566 | 774 | 86.5 |
-| Nilai Impian | 1,771 | 1,518 | 775 | 90.9 |
-| Bandar Ainsdale | 390 | 320 | 170 | 28.6 |
-| Bandar Universiti Pagoh | 749 | 628 | 315 | 40.6 |
+| City of Elmina (homes) | 2,380 | 1,813 | 923 | 94.9 |
+| Elmina Business Park | 200 | 119 | 63 | 7.4 |
+| Bandar Bukit Raja | 3,524 | 2,703 | 1,375 | 117.9 |
+| Serenia City | 607 | 461 | 241 | 12.6 |
+| Ara Damansara (approx. box) | 3,474 | 2,736 | 1,420 | 122.5 |
+| Putra Heights | 7,997 | 7,198 | 3,608 | 93.4 |
+| Nilai Impian | 2,707 | 1,805 | 905 | 74.6 |
+| Bandar Ainsdale | 361 | 201 | 109 | 7.1 |
+| Bandar Universiti Pagoh | 658 | 547 | 273 | 32.5 |
 
 **Caveats:**
-- The footprints reflect the age of the satellite imagery, so recent construction may be missing. For example, Elmina Business Park shows 296 buildings, while its master plan has many more planned. That is why its site opens on the master plan.
+- **Why outlines, not boxes.** An earlier version took every building in each township's bounding box. For City of Elmina that pulled in Kampung Kubu Gajah and other neighbouring areas: only 716 of its 4,697 "Elmina" roofs were actually inside Elmina. Scans are now clipped to the OpenStreetMap outline, and a test checks that every roof lies inside it.
+- **Why Overture, not Microsoft alone.** Microsoft's footprints come from older imagery and missed most of Elmina's newer housing: 861 buildings inside Elmina's outline, against 2,380 in Overture, which adds OpenStreetMap and Google Open Buildings.
+- **Still not complete.** Outlines reflect each source's imagery date, so the newest phases and land under construction may be missing. Elmina Business Park shows 200 buildings, while its master plan has many more planned; that is why its site opens on the master plan.
+- **Township boundaries are OpenStreetMap's**, not SDP's. If SDP's official City of Elmina boundary includes areas outside the OSM outline, those roofs are not counted. Confirm against SDP's list.
 - Potential assumes every solar-ready roof is leased.
-- Factory roofs dominate the totals. Bukit Raja's largest warehouse roof alone is about 46,000 m².
+- Factory roofs dominate the totals. Bukit Raja's largest roof inside its outline is about 31,500 m².
 
 ## Results
 
@@ -147,8 +150,8 @@ lega-os/
   shared/formula_cases.json shared test cases for the Python and TypeScript formulas
   web/                      React + TypeScript + Vite + Tailwind static site
     src/lib/formulas.ts     the same formulas in TypeScript (vitest against the shared cases)
-    public/data/            JSON from the pipeline: ≈ 400 KB core + 3.7 MB of township scans,
-                            each township loaded only when it is opened (≈ 0.1–1.2 MB, gzip ≈ 25%)
+    public/data/            JSON from the pipeline: ≈ 400 KB core + 4.3 MB of township scans,
+                            each township loaded only when it is opened (≈ 0.03–1.8 MB, gzip ≈ 25%)
 ```
 
 - **Heavy work runs offline.** The web app is a static site, so there is no server to fail during judging.
@@ -217,7 +220,7 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
 - **NASA POWER:** Prediction Of Worldwide Energy Resources, NASA Langley Research Center. Free and open.
 - **Open-Meteo:** forecast, Historical Forecast and Previous Runs APIs. Free for non-commercial use under CC BY 4.0. **A commercial deployment needs a paid Open-Meteo plan.**
 - **pvlib:** open-source PV modelling library (BSD-3).
-- **Microsoft Global ML Building Footprints:** Open Database License (ODbL). The derived township files keep that licence.
+- **Overture Maps buildings:** Open Database License (ODbL); it includes OpenStreetMap (ODbL), Google Open Buildings (CC BY 4.0 / ODbL) and Microsoft ML Building Footprints (ODbL). The derived township files keep the ODbL.
 - **Esri World Imagery:** © Esri, Maxar, Earthstar Geographics. Tiles are used with attribution for this non-commercial prototype; a commercial deployment needs an Esri (ArcGIS) licence or another imagery provider.
 - **OpenStreetMap / Nominatim:** township extents and place labels, © OpenStreetMap contributors (ODbL).
 - **Base map:** Elmina Business Park master plan, © Sime Darby Property. Used for the hackathon prototype only.

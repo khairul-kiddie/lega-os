@@ -5,3 +5,4 @@ pvlib>=0.11
 lightgbm>=4.3
 scikit-learn>=1.4
 pytest>=8.0
+overturemaps>=0.12

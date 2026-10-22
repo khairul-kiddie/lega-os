@@ -76,5 +76,5 @@ export function leaseItemSat(roof: SatRoof, townshipName: string, portfolioId?: 
 }
 
 // v2: roof ids changed (unique lot numbers for homes)
-export const leasingStore = createStore<LeaseItem[]>('lega.leasing.v3', [])
-export const shortlistStore = createStore<string[]>('lega.shortlist.v2', [])
+export const leasingStore = createStore<LeaseItem[]>('lega.leasing.v4', [])
+export const shortlistStore = createStore<string[]>('lega.shortlist.v3', [])

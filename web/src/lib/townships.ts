@@ -13,6 +13,8 @@ export interface TownshipSummary {
   kwp: number
   avg_score: number
   by_class: Record<RoofClass, number>
+  /** buildings detected per footprint source */
+  by_source: Record<string, number>
   yield_kwh_kwp: number
   owners_for_1gwh: number | null
 }
@@ -23,6 +25,8 @@ export interface TownshipMeta {
   state: string
   /** [south, north, west, east] */
   bbox: [number, number, number, number]
+  /** township outline(s) as [lat, lng] rings: OpenStreetMap boundary, or an approximate box */
+  outline: [number, number][][]
   extent: 'osm' | 'approx'
   master_plan: string | null
   /** Township this site belongs to on the Roof map (Elmina Business Park → City of Elmina). */
@@ -65,7 +69,11 @@ interface TownshipFile {
   why: string[][]
   cx: number[]
   cy: number[]
+  /** footprint source per roof: o = OpenStreetMap, g = Google Open Buildings, m = Microsoft */
+  src: string[]
 }
+
+export const SOURCE_LABEL: Record<string, string> = { o: 'OpenStreetMap', g: 'Google Open Buildings', m: 'Microsoft ML footprints', x: 'Other' }
 
 /** One detected roof, shaped like the master-plan Roof so panels and leasing can share it. */
 export interface SatRoof extends Roof {
@@ -75,6 +83,8 @@ export interface SatRoof extends Roof {
   ring: [number, number][]
   center: [number, number]
   township: string
+  /** where the roof outline came from */
+  source: string
 }
 
 export const CLASS_SHORT: Record<RoofClass, string> = { house: 'House', terrace: 'Terrace row', medium: 'Mid-size', large: 'Factory' }
@@ -120,6 +130,7 @@ export function loadRoofs(id: string): Promise<SatRoof[]> {
             ring,
             center: [f.cy[i], f.cx[i]],
             township: id,
+            source: SOURCE_LABEL[f.src[i]] ?? SOURCE_LABEL.x,
           }
         })
       }),
@@ -158,7 +169,7 @@ export function townshipGroups(index: TownshipIndex): TownshipGroup[] {
 }
 
 /** Townships this browser has scanned. Two are pre-scanned so the map is never empty on first load. */
-export const scannedStore = createStore<string[]>('lega.scanned.v1', ['elmina', 'elmina-bp'])
+export const scannedStore = createStore<string[]>('lega.scanned.v2', ['elmina', 'elmina-bp'])
 
 export const markScanned = (...ids: string[]) => scannedStore.set((s) => [...s, ...ids.filter((id) => !s.includes(id))])
 export const groupScanned = (g: TownshipGroup, scanned: string[]) => g.sites.every((m) => scanned.includes(m.id))
