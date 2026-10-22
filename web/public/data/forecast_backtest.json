@@ -79,7 +79,9 @@
   "shortfall_if_p50_mwh": 4.9,
   "shortfall_if_p90_mwh": 0.1,
   "promised_p50_mwh": 27.4,
-  "promised_p90_mwh": 17.6
+  "promised_p90_mwh": 17.6,
+  "shortfall_if_p50_kwh_kwp": 3.226,
+  "shortfall_if_p90_kwh_kwp": 0.09
  },
  "sample_window": [
   {

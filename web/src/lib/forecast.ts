@@ -41,6 +41,9 @@ export interface Backtest {
     delivered_mwh: number
     shortfall_if_p50_mwh: number
     shortfall_if_p90_mwh: number
+    /** same shortfalls per kWp, for rescaling to any portfolio */
+    shortfall_if_p50_kwh_kwp?: number
+    shortfall_if_p90_kwh_kwp?: number
     promised_p50_mwh: number
     promised_p90_mwh: number
   }

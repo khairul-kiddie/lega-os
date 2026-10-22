@@ -109,6 +109,8 @@ Site: City of Elmina, 3.1992 N, 101.5006 E (Wikipedia). The system is fixed-tilt
 ### Forecast backtest
 The model predicts daily energy for the Innovation Park sample portfolio: 1,800 MWh/yr × 95% office-hours share + 15% buffer at 1,287 kWh/kWp/yr ≈ **1.53 MWp**. The buyer's solar share is 4.7 MWh/day. The model itself predicts kWh per kWp, so the hit rates and errors below don't depend on portfolio size.
 
+On the **Firming forecast** screen you pick a buyer from the Portfolio builder. The forecast (kWh/kWp, written by `lega.live`) is rescaled to that buyer's plan: portfolio kWp = roofs signed × average MWh per roof ÷ Elmina's yield, and the buyer's need = their solar share ÷ 365. The wettest-week shortfalls are rescaled the same way. Weather is still Elmina's forecast for every township.
+
 - **Training data:** archived Open-Meteo forecasts from 2017-01-02 to 2022-12-31. The archive starts in 2017, so training covers 2017–2022 rather than the 2015–2022 in the brief.
 - **Test data:** 2023-01-01 to 2025-12-31, never seen in training.
 - **"Actual" output:** the pvlib simulation of NASA POWER satellite sunlight, not metered output.

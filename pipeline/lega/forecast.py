@@ -215,7 +215,10 @@ def run():
                "shortfall_if_p50_mwh": round(short(p["p50"]), 1),
                "shortfall_if_p90_mwh": round(short(p["p90"]), 1),
                "promised_p50_mwh": round(float(p["p50"][wk].sum() * to_mwh), 1),
-               "promised_p90_mwh": round(float(p["p90"][wk].sum() * to_mwh), 1)}
+               "promised_p90_mwh": round(float(p["p90"][wk].sum() * to_mwh), 1),
+               # same week per kWp, so the app can rescale to any portfolio without rounding error
+               "shortfall_if_p50_kwh_kwp": round(short(p["p50"]) / to_mwh, 3),
+               "shortfall_if_p90_kwh_kwp": round(short(p["p90"]) / to_mwh, 3)}
 
     # 5) 14-day sample window around the wettest week
     start = wk_end - pd.Timedelta(days=10)

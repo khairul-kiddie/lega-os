@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-10-22T01:24+00:00",
- "issued_for": "2026-10-22",
+ "generated_at": "2026-10-22T22:04+00:00",
+ "issued_for": "2026-10-23",
  "stale": false,
  "source": "Open-Meteo forecast API (16-day) + LightGBM quantile models",
  "lag_source": "NASA POWER near-real-time, last data 2026-10-17",
@@ -9,151 +9,225 @@
  "demand_mwh_day": 4.7,
  "days": [
   {
-   "date": "2026-10-23",
+   "date": "2026-10-24",
    "horizon": 1,
    "confidence": "high",
-   "p50": 4.7,
-   "p90": 4.0,
-   "p10": 5.3,
-   "rain_mm": 9.0,
-   "cloud_pct": 87
+   "p50": 4.3,
+   "p90": 3.6,
+   "p10": 5.1,
+   "kwh_kwp": {
+    "p50": 2.825,
+    "p90": 2.324,
+    "p10": 3.349
+   },
+   "rain_mm": 23.9,
+   "cloud_pct": 99
   },
   {
-   "date": "2026-10-24",
+   "date": "2026-10-25",
    "horizon": 2,
    "confidence": "high",
    "p50": 4.7,
    "p90": 3.9,
    "p10": 5.2,
-   "rain_mm": 21.7,
-   "cloud_pct": 99
-  },
-  {
-   "date": "2026-10-25",
-   "horizon": 3,
-   "confidence": "high",
-   "p50": 3.4,
-   "p90": 2.3,
-   "p10": 4.7,
-   "rain_mm": 24.8,
+   "kwh_kwp": {
+    "p50": 3.09,
+    "p90": 2.579,
+    "p10": 3.404
+   },
+   "rain_mm": 18.0,
    "cloud_pct": 100
   },
   {
    "date": "2026-10-26",
-   "horizon": 4,
+   "horizon": 3,
    "confidence": "high",
-   "p50": 4.5,
-   "p90": 3.5,
-   "p10": 5.3,
-   "rain_mm": 13.4,
+   "p50": 4.4,
+   "p90": 3.6,
+   "p10": 5.1,
+   "kwh_kwp": {
+    "p50": 2.871,
+    "p90": 2.331,
+    "p10": 3.335
+   },
+   "rain_mm": 11.1,
    "cloud_pct": 100
   },
   {
    "date": "2026-10-27",
-   "horizon": 5,
+   "horizon": 4,
    "confidence": "high",
-   "p50": 3.7,
-   "p90": 2.9,
-   "p10": 4.7,
-   "rain_mm": 8.8,
-   "cloud_pct": 100
+   "p50": 5.6,
+   "p90": 4.7,
+   "p10": 6.0,
+   "kwh_kwp": {
+    "p50": 3.648,
+    "p90": 3.046,
+    "p10": 3.941
+   },
+   "rain_mm": 5.3,
+   "cloud_pct": 99
   },
   {
    "date": "2026-10-28",
-   "horizon": 6,
+   "horizon": 5,
    "confidence": "high",
-   "p50": 5.2,
-   "p90": 4.4,
-   "p10": 5.6,
-   "rain_mm": 10.8,
-   "cloud_pct": 94
-  },
-  {
-   "date": "2026-10-29",
-   "horizon": 7,
-   "confidence": "high",
-   "p50": 5.2,
-   "p90": 4.2,
-   "p10": 5.6,
-   "rain_mm": 16.8,
-   "cloud_pct": 95
-  },
-  {
-   "date": "2026-10-30",
-   "horizon": 8,
-   "confidence": "medium",
-   "p50": 5.7,
-   "p90": 4.8,
-   "p10": 6.1,
-   "rain_mm": 5.8,
-   "cloud_pct": 95
-  },
-  {
-   "date": "2026-10-31",
-   "horizon": 9,
-   "confidence": "medium",
-   "p50": 6.5,
-   "p90": 5.6,
-   "p10": 6.9,
-   "rain_mm": 0.8,
-   "cloud_pct": 63
-  },
-  {
-   "date": "2026-11-01",
-   "horizon": 10,
-   "confidence": "medium",
-   "p50": 6.0,
-   "p90": 5.0,
-   "p10": 6.1,
-   "rain_mm": 8.4,
-   "cloud_pct": 94
-  },
-  {
-   "date": "2026-11-02",
-   "horizon": 11,
-   "confidence": "medium",
-   "p50": 5.5,
-   "p90": 4.4,
-   "p10": 5.9,
-   "rain_mm": 13.2,
-   "cloud_pct": 83
-  },
-  {
-   "date": "2026-11-03",
-   "horizon": 12,
-   "confidence": "medium",
-   "p50": 5.6,
-   "p90": 4.8,
-   "p10": 6.2,
-   "rain_mm": 17.8,
-   "cloud_pct": 96
-  },
-  {
-   "date": "2026-11-04",
-   "horizon": 13,
-   "confidence": "medium",
-   "p50": 6.1,
-   "p90": 5.1,
-   "p10": 6.3,
-   "rain_mm": 6.8,
+   "p50": 5.1,
+   "p90": 4.0,
+   "p10": 5.7,
+   "kwh_kwp": {
+    "p50": 3.352,
+    "p90": 2.614,
+    "p10": 3.711
+   },
+   "rain_mm": 13.3,
    "cloud_pct": 93
   },
   {
+   "date": "2026-10-29",
+   "horizon": 6,
+   "confidence": "high",
+   "p50": 5.0,
+   "p90": 3.9,
+   "p10": 5.3,
+   "kwh_kwp": {
+    "p50": 3.259,
+    "p90": 2.567,
+    "p10": 3.496
+   },
+   "rain_mm": 12.0,
+   "cloud_pct": 96
+  },
+  {
+   "date": "2026-10-30",
+   "horizon": 7,
+   "confidence": "high",
+   "p50": 5.9,
+   "p90": 5.0,
+   "p10": 6.3,
+   "kwh_kwp": {
+    "p50": 3.86,
+    "p90": 3.265,
+    "p10": 4.147
+   },
+   "rain_mm": 0.2,
+   "cloud_pct": 91
+  },
+  {
+   "date": "2026-10-31",
+   "horizon": 8,
+   "confidence": "medium",
+   "p50": 6.2,
+   "p90": 5.6,
+   "p10": 6.8,
+   "kwh_kwp": {
+    "p50": 4.074,
+    "p90": 3.678,
+    "p10": 4.445
+   },
+   "rain_mm": 5.0,
+   "cloud_pct": 53
+  },
+  {
+   "date": "2026-11-01",
+   "horizon": 9,
+   "confidence": "medium",
+   "p50": 6.0,
+   "p90": 5.1,
+   "p10": 6.3,
+   "kwh_kwp": {
+    "p50": 3.896,
+    "p90": 3.314,
+    "p10": 4.113
+   },
+   "rain_mm": 5.8,
+   "cloud_pct": 96
+  },
+  {
+   "date": "2026-11-02",
+   "horizon": 10,
+   "confidence": "medium",
+   "p50": 6.0,
+   "p90": 4.9,
+   "p10": 6.3,
+   "kwh_kwp": {
+    "p50": 3.908,
+    "p90": 3.206,
+    "p10": 4.123
+   },
+   "rain_mm": 8.8,
+   "cloud_pct": 44
+  },
+  {
+   "date": "2026-11-03",
+   "horizon": 11,
+   "confidence": "medium",
+   "p50": 6.0,
+   "p90": 5.1,
+   "p10": 6.3,
+   "kwh_kwp": {
+    "p50": 3.923,
+    "p90": 3.305,
+    "p10": 4.128
+   },
+   "rain_mm": 8.0,
+   "cloud_pct": 87
+  },
+  {
+   "date": "2026-11-04",
+   "horizon": 12,
+   "confidence": "medium",
+   "p50": 5.9,
+   "p90": 4.8,
+   "p10": 6.2,
+   "kwh_kwp": {
+    "p50": 3.864,
+    "p90": 3.133,
+    "p10": 4.078
+   },
+   "rain_mm": 14.6,
+   "cloud_pct": 91
+  },
+  {
    "date": "2026-11-05",
+   "horizon": 13,
+   "confidence": "medium",
+   "p50": 6.0,
+   "p90": 5.0,
+   "p10": 6.2,
+   "kwh_kwp": {
+    "p50": 3.935,
+    "p90": 3.298,
+    "p10": 4.056
+   },
+   "rain_mm": 12.0,
+   "cloud_pct": 98
+  },
+  {
+   "date": "2026-11-06",
    "horizon": 14,
    "confidence": "medium",
    "p50": 5.3,
-   "p90": 4.3,
-   "p10": 5.7,
-   "rain_mm": 7.8,
-   "cloud_pct": 98
+   "p90": 4.4,
+   "p10": 5.9,
+   "kwh_kwp": {
+    "p50": 3.469,
+    "p90": 2.904,
+    "p10": 3.846
+   },
+   "rain_mm": 6.2,
+   "cloud_pct": 95
   }
  ],
  "days_15_30_typical": {
-  "from": "2026-11-06",
-  "to": "2026-11-21",
+  "from": "2026-11-07",
+  "to": "2026-11-22",
   "p50": 5.4,
   "p90": 4.2,
+  "kwh_kwp": {
+   "p50": 3.508,
+   "p90": 2.763
+  },
   "basis": "Same calendar days, 2015–2025 (pvlib on NASA POWER)"
  }
 }

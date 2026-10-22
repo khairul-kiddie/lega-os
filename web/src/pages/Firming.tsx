@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader, Segmented } from '../components/ui'
-import { fmt, niceTicks, useJson } from '../lib/data'
+import { fmt, niceTicks, useJson, type YieldData } from '../lib/data'
 import { pct, shortDate, type Backtest } from '../lib/forecast'
+import { buildPlan, portfolioStore, SAMPLE_PORTFOLIO_ID, type Plan, type Portfolio } from '../lib/portfolio'
+import { useStore } from '../lib/store'
+import { scannedStore, type TownshipIndex } from '../lib/townships'
 
 interface LiveDay {
   date: string
@@ -12,6 +16,8 @@ interface LiveDay {
   p10: number
   rain_mm: number
   cloud_pct: number
+  /** forecast per kWp (kWh/kWp), so it can be rescaled to any portfolio */
+  kwh_kwp?: { p50: number; p90: number; p10: number }
 }
 
 interface Live {
@@ -25,7 +31,40 @@ interface Live {
   portfolio_kwp: number
   demand_mwh_day: number
   days: LiveDay[]
-  days_15_30_typical: { from: string; to: string; p50: number; p90: number; basis: string }
+  days_15_30_typical: { from: string; to: string; p50: number; p90: number; basis: string; kwh_kwp?: { p50: number; p90: number } }
+}
+
+/** A buyer's portfolio as the forecast sees it. */
+interface Target {
+  p: Portfolio
+  plan: Plan
+  roofs: number
+  /** kWp at Elmina's yield that produces the portfolio's annual energy (the forecast is per kWp of Elmina roofs) */
+  kwp: number
+  demand: number
+}
+
+function targets(portfolios: Portfolio[], index: TownshipIndex, y: YieldData, scanned: string[]): Target[] {
+  return portfolios.flatMap((p) => {
+    const plan = buildPlan(p, index, y, scanned)
+    if (!plan) return []
+    const roofs = Math.min(plan.roofsNeeded, plan.goodAvailable)
+    return [{ p, plan, roofs, kwp: (roofs * plan.avgMwhPerRoof * 1000) / y.annual_kwh_per_kwp, demand: plan.solarNeed / 365 }]
+  })
+}
+
+/** Rescale the live forecast (made for a reference portfolio) to a buyer's portfolio and demand. */
+function scaleLive(live: Live, t: Target): Live {
+  const k = t.kwp / live.portfolio_kwp
+  const mwh = (perKwp: number | undefined, ref: number) => (perKwp !== undefined ? (perKwp * t.kwp) / 1000 : ref * k)
+  const d15 = live.days_15_30_typical
+  return {
+    ...live,
+    portfolio_kwp: t.kwp,
+    demand_mwh_day: t.demand,
+    days: live.days.map((d) => ({ ...d, p50: mwh(d.kwh_kwp?.p50, d.p50), p90: mwh(d.kwh_kwp?.p90, d.p90), p10: mwh(d.kwh_kwp?.p10, d.p10) })),
+    days_15_30_typical: { ...d15, p50: mwh(d15.kwh_kwp?.p50, d15.p50), p90: mwh(d15.kwh_kwp?.p90, d15.p90) },
+  }
 }
 
 type Mode = 'p90' | 'p50'
@@ -49,33 +88,62 @@ function dailyAction(gap: number, demand: number) {
 }
 
 export default function Firming() {
-  const { data: live, error } = useJson<Live>('forecast_live.json')
+  const { data: raw, error } = useJson<Live>('forecast_live.json')
   const { data: bt } = useJson<Backtest>('forecast_backtest.json')
+  const { data: index } = useJson<TownshipIndex>('townships/index.json')
+  const { data: y } = useJson<YieldData>('yield.json')
+  const portfolios = useStore(portfolioStore)
+  const scanned = useStore(scannedStore)
+  const [params, setParams] = useSearchParams()
   const [mode, setMode] = useState<Mode>('p90')
+
+  const options = index && y ? targets(portfolios, index, y, scanned) : []
+  const target = options.find((o) => o.p.id === params.get('p')) ?? options.find((o) => o.p.id === SAMPLE_PORTFOLIO_ID) ?? options[0]
+  const live = raw && target ? scaleLive(raw, target) : null
+  const loading = !error && (!raw || !index || !y)
 
   return (
     <>
       <PageHeader
         title="Firming forecast"
-        subtitle="How much SDP can safely promise Innovation Park · roadmap feature, live weather forecast, sample buyer"
+        subtitle={`How much SDP can safely promise ${target ? target.p.buyer : 'each buyer'} · roadmap feature, live weather forecast, sample buyers`}
         right={
-          <Segmented
-            label="Promise level"
-            value={mode}
-            onChange={setMode}
-            options={[
-              { id: 'p90', label: 'Promise P90 (safe)' },
-              { id: 'p50', label: 'Promise P50 (average)' },
-            ]}
-          />
+          <>
+            {options.length > 0 && target && (
+              <label className="flex items-center gap-2 text-sm text-muted">
+                Buyer
+                <select className="input !w-auto min-w-[220px] font-medium text-ink" value={target.p.id} onChange={(e) => setParams({ p: e.target.value }, { replace: true })}>
+                  {options.map((o) => <option key={o.p.id} value={o.p.id}>{o.p.buyer}</option>)}
+                </select>
+              </label>
+            )}
+            <Segmented
+              label="Promise level"
+              value={mode}
+              onChange={setMode}
+              options={[
+                { id: 'p90', label: 'Promise P90 (safe)' },
+                { id: 'p50', label: 'Promise P50 (average)' },
+              ]}
+            />
+          </>
         }
       />
       {error && <p className="text-warn">Could not load the live forecast: {error}</p>}
-      {live?.stale && <p className="mb-4 rounded-lg border border-warn/40 bg-[#F6E1D8] px-4 py-2 text-sm text-warn">{live.stale_reason}</p>}
-      {live && (
+      {loading && <p className="text-muted">Loading…</p>}
+      {!loading && !target && (
+        <div className="card p-8 text-center">
+          <p className="font-medium">No buyer portfolio to forecast yet.</p>
+          <p className="mt-1 text-sm text-muted">Build a portfolio with at least one scanned township, then come back.</p>
+          <Link to="/portfolio" className="btn-primary mt-4">Open portfolio builder</Link>
+        </div>
+      )}
+      {raw?.stale && <p className="mb-4 rounded-lg border border-warn/40 bg-[#F6E1D8] px-4 py-2 text-sm text-warn">{raw.stale_reason}</p>}
+      {live && target && (
         <>
+          <PortfolioLine t={target} />
           <div className="grid gap-6 xl:grid-cols-[440px_minmax(0,1fr)]">
-            <Tomorrow live={live} mode={mode} />
+            <Tomorrow live={live} mode={mode} buyer={target.p.buyer} />
             <section className="card p-6" aria-labelledby="fc14-h">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 id="fc14-h" className="text-lg font-semibold">Next 14 days (MWh per day)</h2>
@@ -95,12 +163,27 @@ export default function Firming() {
           <PlanTable live={live} mode={mode} />
         </>
       )}
-      {bt && <BacktestCards bt={bt} />}
+      {bt && target && <BacktestCards bt={bt} kwp={target.kwp} />}
     </>
   )
 }
 
-function Tomorrow({ live, mode }: { live: Live; mode: Mode }) {
+function PortfolioLine({ t }: { t: Target }) {
+  const towns = t.plan.allocation.filter((a) => a.roofs > 0)
+  const outsideElmina = towns.some((a) => a.township.id !== 'elmina' && a.township.parent !== 'elmina')
+  return (
+    <p className="mb-6 rounded-card border border-line bg-card px-5 py-3 text-sm">
+      <span className="font-semibold">{t.p.buyer}</span> · portfolio of <span className="num">{fmt(t.roofs)}</span> roofs in{' '}
+      {towns.map((a) => a.township.name).join(' and ')} (≈ <span className="num">{fmt(t.kwp)}</span> kWp) from the{' '}
+      <Link to={`/portfolio/${t.p.id}/plan`} className="text-primary underline underline-offset-2">portfolio plan</Link> · buyer needs{' '}
+      <span className="num">{fmt(t.demand, 1)}</span> MWh/day from solar.
+      {!t.plan.enough && <span className="text-warn"> The plan is short of roofs, so this uses the {fmt(t.roofs)} that exist.</span>}
+      {outsideElmina && <span className="text-muted"> Weather is Elmina’s forecast, applied to every township in the portfolio.</span>}
+    </p>
+  )
+}
+
+function Tomorrow({ live, mode, buyer }: { live: Live; mode: Mode; buyer: string }) {
   const d = live.days[0]
   const commit = d[mode]
   return (
@@ -118,7 +201,7 @@ function Tomorrow({ live, mode }: { live: Live; mode: Mode }) {
         {[
           ['Expected (P50)', d.p50],
           ['Safe (P90)', d.p90],
-          ['Buyer demand', live.demand_mwh_day],
+          [`${buyer} needs`, live.demand_mwh_day],
         ].map(([k, v]) => (
           <div key={k as string} className="flex justify-between">
             <dt className="text-white/85">{k}</dt>
@@ -297,13 +380,17 @@ function PlanTable({ live, mode }: { live: Live; mode: Mode }) {
   )
 }
 
-function BacktestCards({ bt }: { bt: Backtest }) {
+function BacktestCards({ bt, kwp }: { bt: Backtest; kwp: number }) {
   const w = bt.wettest_week
+  // rescale the reference portfolio's shortfalls to this buyer's portfolio
+  const scale = (perKwp: number | undefined, ref: number) => (perKwp !== undefined ? (perKwp * kwp) / 1000 : (ref * kwp) / bt.portfolio_kwp)
+  const shortP50 = scale(w.shortfall_if_p50_kwh_kwp, w.shortfall_if_p50_mwh)
+  const shortP90 = scale(w.shortfall_if_p90_kwh_kwp, w.shortfall_if_p90_mwh)
   return (
     <section className="card mt-6 p-6" aria-labelledby="bt-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="bt-h" className="text-lg font-semibold">Backtest: would our promises have held?</h2>
-        <p className="text-[15px] text-muted">Test period 2023–2025, unseen by the model · wettest week {shortDate(w.start)} – {shortDate(w.end)} {w.end.slice(0, 4)}, {fmt(w.rain_mm)} mm rain</p>
+        <p className="text-[15px] text-muted">Test period 2023–2025, unseen by the model · wettest week {shortDate(w.start)} – {shortDate(w.end)} {w.end.slice(0, 4)}, {fmt(w.rain_mm)} mm rain · shortfalls scaled to this portfolio</p>
       </div>
       <dl className="mt-4 grid gap-4 md:grid-cols-3">
         <div className="rounded-card bg-page px-6 py-5">
@@ -313,12 +400,12 @@ function BacktestCards({ bt }: { bt: Backtest }) {
         </div>
         <div className="rounded-card bg-page px-6 py-5">
           <dt className="text-[15px] text-muted">Wettest week · naive promise (P50)</dt>
-          <dd className="mt-2 text-4xl font-medium num text-warn">{fmt(w.shortfall_if_p50_mwh, 1)} MWh short</dd>
+          <dd className="mt-2 text-4xl font-medium num text-warn">{fmt(shortP50, 1)} MWh short</dd>
           <dd className="mt-2 text-[15px] text-muted">≈ RM [X] in penalties</dd>
         </div>
         <div className="rounded-card bg-page px-6 py-5">
           <dt className="text-[15px] text-muted">Wettest week · P90 promise</dt>
-          <dd className="mt-2 text-4xl font-medium num text-primary">{fmt(w.shortfall_if_p90_mwh, 1)} MWh short</dd>
+          <dd className="mt-2 text-4xl font-medium num text-primary">{fmt(shortP90, 1)} MWh short</dd>
           <dd className="mt-2 text-[15px] text-muted">≈ RM [X] in penalties</dd>
         </div>
       </dl>

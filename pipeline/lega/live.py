@@ -86,10 +86,13 @@ def run(today: date | None = None) -> dict:
             "days": [{"date": str(d.date()), "horizon": i + 1, "confidence": "high" if i < 7 else "medium",
                       "p50": round(p.loc[d, "p50"] * to_mwh, 1), "p90": round(p.loc[d, "p90"] * to_mwh, 1),
                       "p10": round(p.loc[d, "p10"] * to_mwh, 1),
+                      # per kWp, so the app can rescale to any buyer's portfolio
+                      "kwh_kwp": {q: round(float(p.loc[d, q]), 3) for q in ("p50", "p90", "p10")},
                       "rain_mm": round(float(fc.loc[d, "fc_precip"]), 1), "cloud_pct": round(float(fc.loc[d, "fc_cloud"]))}
                      for i, d in enumerate(p.index)],
             "days_15_30_typical": {"from": str(later[0].date()), "to": str(later[-1].date()),
                                    "p50": round(t["p50"] * to_mwh, 1), "p90": round(t["p90"] * to_mwh, 1),
+                                   "kwh_kwp": {"p50": round(t["p50"], 3), "p90": round(t["p90"], 3)},
                                    "basis": f"Same calendar days, {t['years']} (pvlib on NASA POWER)"},
         }
     except Exception as e:
