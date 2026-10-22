@@ -4,12 +4,13 @@ import { PageHeader } from '../components/ui'
 import { fmt, useJson } from '../lib/data'
 import type { YieldData } from '../lib/data'
 import { loadRoofs, markScanned, scannedStore, type TownshipIndex } from '../lib/townships'
-import type { Pattern, Safety, Unit } from '../lib/formulas'
+import { DROPOUT_RATE, type Pattern, type Safety, type Unit } from '../lib/formulas'
 import {
   BUYER_LOCATIONS,
   buildPlan,
   GOOD_SCORE,
   newPortfolio,
+  parseDemand,
   PATTERN_INFO,
   portfolioStore,
   requirement,
@@ -73,11 +74,12 @@ function List() {
   const { data: y } = useJson<YieldData>('yield.json')
   const scanned = useStore(scannedStore)
   const navigate = useNavigate()
+  const [confirmId, setConfirmId] = useState<string | null>(null)
 
-  const create = () => {
-    const p = newPortfolio()
-    portfolioStore.set((l) => [p, ...l])
-    navigate(`/portfolio/${p.id}/details`)
+  const create = () => navigate('/portfolio/new/details')
+  const remove = (id: string) => {
+    portfolioStore.set((l) => l.filter((x) => x.id !== id))
+    setConfirmId(null)
   }
 
   return (
@@ -117,10 +119,19 @@ function List() {
                   <td className="px-4 py-4 num">{plan ? fmt(plan.roofsNeeded) : '—'}</td>
                   <td className="px-4 py-4"><span className={`rounded-full px-3 py-1 text-sm font-medium ${STATUS_CLS[p.status]}`}>{STATUS_LABEL[p.status]}</span></td>
                   <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
-                      <Link className="btn-ghost" to={`/portfolio/${p.id}/details`}>Edit details</Link>
-                      <Link className="btn-dark" to={`/portfolio/${p.id}/${p.demand > 0 ? 'plan' : 'details'}`}>Open plan</Link>
-                    </div>
+                    {confirmId === p.id ? (
+                      <div className="flex items-center justify-end gap-2" role="group" aria-label={`Delete ${p.buyer}?`}>
+                        <span className="text-sm text-warn">Delete this portfolio?</span>
+                        <button type="button" className="btn-ghost" onClick={() => setConfirmId(null)}>Keep</button>
+                        <button type="button" className="btn bg-warn text-white hover:bg-warn/90" onClick={() => remove(p.id)}>Delete</button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2">
+                        <Link className="btn-ghost" to={`/portfolio/${p.id}/details`}>Edit details</Link>
+                        <Link className="btn-dark" to={`/portfolio/${p.id}/plan`}>Open plan</Link>
+                        <button type="button" className="btn-ghost !px-3" aria-label={`Delete ${p.buyer}`} onClick={() => setConfirmId(p.id)}>Delete</button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               )
@@ -128,13 +139,17 @@ function List() {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-muted">Saved in this browser only. Sample buyers, not real contracts.</p>
+      <p className="mt-3 text-xs text-muted">Saved in this browser only. Sample buyers, not real contracts. Deleting a portfolio keeps any roofs already on the leasing list.</p>
     </>
   )
 }
 
 function Details() {
-  const [p, update] = usePortfolio()
+  const { id } = useParams()
+  const isNew = id === 'new'
+  const [draft] = useState(newPortfolio)
+  const [saved, update] = usePortfolio()
+  const p = isNew ? draft : saved
   const navigate = useNavigate()
   const [buyer, setBuyer] = useState(p?.buyer ?? '')
   const [location, setLocation] = useState(p?.location ?? BUYER_LOCATIONS[0])
@@ -145,22 +160,31 @@ function Details() {
   const [csvNote, setCsvNote] = useState(false)
 
   if (!p) return <NotFound />
-  const demandNum = Number(demand)
+  const demandNum = parseDemand(demand)
   const errors = {
     buyer: buyer.trim() ? null : 'Enter the buyer’s name.',
-    demand: demand.trim() && Number.isFinite(demandNum) && demandNum > 0 ? null : 'Enter a demand greater than 0.',
+    demand: !demand.trim()
+      ? 'Enter the buyer’s electricity demand.'
+      : !Number.isFinite(demandNum)
+        ? 'Enter a number, e.g. 1800 or 1,800.'
+        : demandNum > 0
+          ? null
+          : 'Enter a demand greater than 0.',
   }
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     setTried(true)
     if (errors.buyer || errors.demand) return
-    update({ buyer: buyer.trim(), location, demand: demandNum, unit, pattern })
+    const fields = { buyer: buyer.trim(), location, demand: demandNum, unit, pattern }
+    // a new portfolio is only saved once its details are valid, so abandoned forms leave nothing behind
+    if (isNew) portfolioStore.set((l) => [{ ...draft, ...fields }, ...l])
+    else update(fields)
     navigate(`/portfolio/${p.id}/requirement`)
   }
 
   return (
     <>
-      <PageHeader title={p.buyer ? `Edit: ${p.buyer}` : 'New portfolio'} />
+      <PageHeader title={isNew ? 'New portfolio' : `Edit: ${p.buyer}`} />
       <Stepper step={0} />
       <form onSubmit={submit} noValidate className="card max-w-3xl space-y-6 p-6">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -214,13 +238,7 @@ function Details() {
         </fieldset>
 
         <div className="flex justify-between gap-2">
-          <Link
-            to="/portfolio"
-            className="btn-ghost"
-            onClick={() => !p.buyer && portfolioStore.set((l) => l.filter((x) => x.id !== p.id))}
-          >
-            Cancel
-          </Link>
+          <Link to="/portfolio" className="btn-ghost">Cancel</Link>
           <button type="submit" className="btn-primary">Continue</button>
         </div>
       </form>
@@ -343,6 +361,7 @@ function PlanStep() {
     setSent(items.length)
   }
 
+
   const shown = data.townships.filter((t) => `${t.name} ${t.state}`.toLowerCase().includes(query.toLowerCase()))
 
   return (
@@ -420,10 +439,13 @@ function PlanStep() {
 function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldData; onSend: () => void; sent: number | null }) {
   const towns = plan.allocation.filter((a) => a.roofs > 0)
   const sendable = plan.allocation.reduce((a, x) => a + x.roofs, 0)
-  // if the townships can't supply roofsNeeded, show what the available good roofs would actually cover
-  const availableWorst = plan.enough ? null : Math.min(...plan.covers) * (plan.goodAvailable / plan.roofsNeeded)
+  // If the townships can't supply roofsNeeded, everything below shows what the available good roofs actually cover.
+  const signable = plan.enough ? plan.roofsNeeded : plan.goodAvailable
+  const covers = plan.enough ? plan.covers : plan.covers.map((c) => (c * plan.goodAvailable) / plan.roofsNeeded)
+  const dropout = Math.min(...covers) * (1 - DROPOUT_RATE)
+  const worstPct = Math.round(Math.min(...covers) * 100)
   const where = towns.map((a) => a.township.name).join(' and ')
-  const dropPct = Math.round(plan.dropoutCover * 100)
+  const dropPct = Math.round(dropout * 100)
   const checks = [
     {
       ok: plan.enough,
@@ -436,22 +458,38 @@ function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldDat
       text: `Solar can cover about ${Math.round(plan.share * 100)}% of ${PATTERN_INFO[p.pattern].label.toLowerCase()} demand; the rest needs grid supply${p.pattern === 'office' ? '.' : ' or storage.'}`,
     },
     {
-      ok: plan.dropoutCover >= 1 ? true : plan.dropoutCover >= 0.9 ? 'warn' : false,
+      ok: dropout >= 1 ? true : dropout >= 0.9 ? 'warn' : false,
       title: 'Dropout buffer',
-      text: `If 1 in 5 owners decline, the worst month still covers ${dropPct}% of the solar share.`,
+      text: `If 1 in 5 owners decline, the worst month still covers ${dropout > 0 && dropPct < 1 ? 'under 1' : dropPct}% of the solar share.`,
     },
   ] as const
 
   return (
     <section className="card p-6" aria-labelledby="plan-h" aria-live="polite">
       <div className="label">Plan</div>
-      <h2 id="plan-h" className="mt-1 text-4xl font-semibold">
-        Sign up <span className="num text-primary">{fmt(plan.roofsNeeded)}</span> roofs
-      </h2>
-      <p className="mt-2 max-w-2xl text-muted">
-        {fmt(plan.roofsNeeded)} roofs in {where || 'the selected townships'} cover {Math.round(plan.share * 100)}% of {p.buyer}’s demand
-        ({fmt(plan.solarNeed)} MWh/yr), including a {Math.round(plan.buffer * 100)}% buffer ({fmt(plan.roofsBase)} before buffer, avg {fmt(plan.avgMwhPerRoof, 1)} MWh/yr per roof).
-      </p>
+      {plan.enough ? (
+        <>
+          <h2 id="plan-h" className="mt-1 text-4xl font-semibold">
+            Sign up <span className="num text-primary">{fmt(plan.roofsNeeded)}</span> roofs
+          </h2>
+          <p className="mt-2 max-w-2xl text-muted">
+            {fmt(plan.roofsNeeded)} roofs in {where || 'the selected townships'} cover {Math.round(plan.share * 100)}% of {p.buyer}’s demand
+            ({fmt(plan.solarNeed)} MWh/yr), including a {Math.round(plan.buffer * 100)}% buffer ({fmt(plan.roofsBase)} before buffer, avg {fmt(plan.avgMwhPerRoof, 1)} MWh/yr per roof).
+          </p>
+        </>
+      ) : (
+        <>
+          <h2 id="plan-h" className="mt-1 text-4xl font-semibold">
+            Needs <span className="num text-warn">{fmt(plan.roofsNeeded)}</span> roofs
+          </h2>
+          <p className="mt-2 max-w-2xl text-muted">
+            Covering {Math.round(plan.share * 100)}% of {p.buyer}’s demand ({fmt(plan.solarNeed)} MWh/yr) takes {fmt(plan.roofsNeeded)} roofs with a{' '}
+            {Math.round(plan.buffer * 100)}% buffer, but {where || 'the selected townships'} {towns.length > 1 ? 'have' : 'has'} only{' '}
+            {fmt(plan.goodAvailable)} good roofs. Signing all of them covers{' '}
+            {worstPct < 1 ? 'under 1%' : `${worstPct}%`} of the solar share in the worst month. Add or scan another township.
+          </p>
+        </>
+      )}
 
       <ul className="mt-5 grid gap-3 md:grid-cols-3">
         {checks.map((c) => (
@@ -483,20 +521,18 @@ function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldDat
       </ul>
 
       <h3 className="mt-6 text-sm font-semibold">Monthly cover of the solar share</h3>
-      <p className="text-xs text-muted">From the 2015–2025 average monthly yield (NASA POWER + pvlib), assuming all {fmt(plan.roofsNeeded)} roofs are signed.</p>
-      {availableWorst !== null && (
-        <p className="mt-2 rounded-lg border border-warn/40 bg-[#F6E1D8] px-3 py-2 text-sm text-warn">
-          With only the {fmt(plan.goodAvailable)} good roofs available, the worst month would cover {Math.round(availableWorst * 100)}% of the solar share.
-        </p>
-      )}
+      <p className="text-xs text-muted">
+        From the 2015–2025 average monthly yield (NASA POWER + pvlib), assuming {plan.enough ? `all ${fmt(signable)}` : `the ${fmt(signable)} available`} roofs are signed.
+      </p>
       <ul className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-        {plan.covers.map((c, i) => {
+        {covers.map((c, i) => {
           const pct = Math.round(c * 100)
+          const label = c > 0 && pct < 1 ? '<1%' : `${pct}%`
           const cls = pct >= 100 ? 'bg-primary text-white' : pct >= 90 ? 'bg-amber text-ink' : 'bg-warn text-white'
           return (
             <li key={i} className={`rounded-lg p-2 text-center ${cls}`}>
               <div className="text-xs">{y.monthly[i].month}</div>
-              <div className="num text-sm font-semibold">{pct}%</div>
+              <div className="num text-sm font-semibold">{label}</div>
             </li>
           )
         })}
@@ -506,7 +542,8 @@ function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldDat
         <button type="button" className="btn-primary" onClick={onSend}>Send {fmt(sendable)} roofs to leasing list</button>
         {sent !== null && (
           <p className="text-sm" role="status">
-            Added {sent} new roofs. <Link to="/leasing" className="text-primary underline underline-offset-2">Open leasing list</Link>
+            {sent > 0 ? `Added ${fmt(sent)} roofs.` : 'These roofs are already on the leasing list.'}{' '}
+            <Link to="/leasing" className="text-primary underline underline-offset-2">Open leasing list</Link>
           </p>
         )}
       </div>

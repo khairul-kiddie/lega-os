@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Kpi, PageHeader, Segmented } from '../components/ui'
-import { newPortfolio, portfolioStore } from '../lib/portfolio'
 import SiteMap, { MapLegend, ZoneCrop } from '../components/SiteMap'
 import SatMap, { SAT_COLORS, type ScanSweep } from '../components/SatMap'
 import TownshipsMap from '../components/TownshipsMap'
@@ -30,6 +29,7 @@ type View = 'sat' | 'plan'
  *   /map                      Level 0: every SDP township on one map
  *   /map?t=<id>&scan=1        scan replay for one township
  *   /map?t=<id>[&site=][&view=][&zone=]   Level 1: one township (and Level 2: one master-plan zone)
+ * A site id in t (e.g. elmina-bp) opens its parent township on that site.
  */
 export default function RoofMap() {
   const { data: index, error } = useJson<TownshipIndex>('townships/index.json')
@@ -41,13 +41,15 @@ export default function RoofMap() {
   if (error) return <p className="text-warn">Could not load townships: {error}</p>
   if (!index) return <p className="text-muted">Loading townships…</p>
 
-  const group = groups.find((g) => g.id === params.get('t'))
+  const t = params.get('t')
+  const parentId = index?.townships.find((m) => m.id === t)?.parent
+  const group = groups.find((g) => g.id === (parentId ?? t))
   if (!group) return <AllTownships index={index} groups={groups} scanned={scanned} selected={params.get('sel')} onPick={(id) => setParams({ sel: id }, { replace: true })} />
   if (params.get('scan')) return <ScanView group={group} onDone={() => setParams({ t: group.id })} onCancel={() => setParams({ sel: group.id })} />
 
   // Business park first in the toggle, then homes
   const sites = [...group.sites].sort((a, b) => Number(!!b.master_plan) - Number(!!a.master_plan))
-  const site = sites.find((m) => m.id === params.get('site')) ?? sites[0]
+  const site = sites.find((m) => m.id === (params.get('site') ?? (parentId ? t : null))) ?? sites[0]
   const view: View = site.master_plan && params.get('view') !== 'sat' ? 'plan' : 'sat'
   const zoneId = params.get('zone')
   const go = (next: { site?: string; view?: View; zone?: string | null }) => {
@@ -86,11 +88,7 @@ export default function RoofMap() {
 
 function useBuildPortfolio() {
   const navigate = useNavigate()
-  return () => {
-    const p = newPortfolio()
-    portfolioStore.set((l) => [p, ...l])
-    navigate(`/portfolio/${p.id}/details`)
-  }
+  return () => navigate('/portfolio/new/details')
 }
 
 /* ---------------- Level 0: all townships ---------------- */

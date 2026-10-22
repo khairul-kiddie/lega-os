@@ -72,6 +72,11 @@ const SAMPLES: Portfolio[] = [
 export const STATUS_LABEL: Record<Portfolio['status'], string> = { Draft: 'Draft', 'Plan ready': 'Plan ready', 'Sent to leasing': 'Leasing' }
 
 export const portfolioStore = createStore<Portfolio[]>('lega.portfolios.v3', SAMPLES)
+// Older builds saved a draft as soon as "+ New portfolio" was clicked; drop any left empty.
+if (portfolioStore.get().some((p) => !p.buyer && !(p.demand > 0))) portfolioStore.set((l) => l.filter((p) => p.buyer || p.demand > 0))
+
+/** Demand as typed by a person: accepts "1800", "1,800" and "1 800". NaN if it isn't a number. */
+export const parseDemand = (s: string) => (s.trim() ? Number(s.replace(/[,\s]/g, '')) : NaN)
 
 export function newPortfolio(): Portfolio {
   return {

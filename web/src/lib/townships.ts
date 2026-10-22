@@ -168,6 +168,10 @@ export function townshipGroups(index: TownshipIndex): TownshipGroup[] {
     })
 }
 
+/** Link to one roof on the satellite map. Works for sites inside a township (Elmina Business Park). */
+export const roofHref = (townshipId: string, roofId: string) =>
+  `/map?t=${townshipId}&site=${townshipId}&view=sat&roof=${encodeURIComponent(roofId)}`
+
 /** Townships this browser has scanned. Two are pre-scanned so the map is never empty on first load. */
 export const scannedStore = createStore<string[]>('lega.scanned.v2', ['elmina', 'elmina-bp'])
 

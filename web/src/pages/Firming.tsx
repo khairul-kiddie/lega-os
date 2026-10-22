@@ -42,7 +42,8 @@ function weatherPhrase(d: LiveDay) {
 }
 
 function dailyAction(gap: number, demand: number) {
-  if (gap >= 0) return `Surplus of ${fmt(gap, 1)} MWh: offer it to other buyers.`
+  if (Math.abs(gap) < 0.05) return 'On target: the promise matches demand.'
+  if (gap > 0) return `Surplus of ${fmt(gap, 1)} MWh: offer it to other buyers.`
   if (-gap <= demand * 0.15) return `Gap of ${fmt(-gap, 1)} MWh: top up from the grid.`
   return `Gap of ${fmt(-gap, 1)} MWh: book a firming reserve (battery or grid contract).`
 }
@@ -271,7 +272,7 @@ function PlanTable({ live, mode }: { live: Live; mode: Mode }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-muted">
-              <tr><th className="py-1 pr-3 font-medium">Day</th><th className="pr-3 font-medium">Rain</th><th className="pr-3 font-medium">Expected</th><th className="pr-3 font-medium">Safe</th><th className="pr-3 font-medium">Gap vs demand</th><th className="font-medium">Action</th></tr>
+              <tr><th className="py-1 pr-3 font-medium">Day</th><th className="pr-3 font-medium">Rain</th><th className="pr-3 font-medium">Expected</th><th className="pr-3 font-medium">{mode === 'p90' ? 'Safe (P90)' : 'Promise (P50)'}</th><th className="pr-3 font-medium">Gap vs demand</th><th className="font-medium">Action</th></tr>
             </thead>
             <tbody className="num">
               {live.days.map((d) => {
@@ -281,7 +282,7 @@ function PlanTable({ live, mode }: { live: Live; mode: Mode }) {
                     <td className="py-1.5 pr-3 font-sans">{weekday(d.date)} {shortDate(d.date)}</td>
                     <td className="pr-3">{d.rain_mm} mm</td>
                     <td className="pr-3">{fmt(d.p50, 1)}</td>
-                    <td className="pr-3">{fmt(d.p90, 1)}</td>
+                    <td className="pr-3">{fmt(d[mode], 1)}</td>
                     <td className={`pr-3 ${gap >= 0 ? 'text-primary' : 'text-warn'}`}>{gap >= 0 ? '+' : ''}{fmt(gap, 1)}</td>
                     <td className="font-sans">{dailyAction(gap, demand)}</td>
                   </tr>

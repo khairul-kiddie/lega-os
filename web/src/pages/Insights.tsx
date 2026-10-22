@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import PromiseChart from '../components/PromiseChart'
 import { PageHeader, SampleNote, Segmented } from '../components/ui'
-import { isHome, loadRoofs, type SatRoof, type TownshipIndex, type TownshipMeta } from '../lib/townships'
+import { isHome, loadRoofs, roofHref, type SatRoof, type TownshipIndex, type TownshipMeta } from '../lib/townships'
 import { fmt, useJson } from '../lib/data'
 import type { Roof, ScorePart, YieldData } from '../lib/data'
 import { pct, shortDate, WEATHER_LABEL, type Backtest } from '../lib/forecast'
@@ -235,7 +235,7 @@ function RoofTab() {
         <p className="flex flex-wrap items-center gap-2 text-[15px] text-muted">
           Pipeline for <span className="font-semibold text-ink">{ex.r.label}, {ex.town.name}</span> ·
           <span className="rounded-full bg-[#DCEFE6] px-3 py-1 font-medium text-primary-dark">Final score {ex.r.score}</span>
-          <Link to={`/map?t=${ex.town.id}&roof=${ex.r.id}`} className="min-h-touch inline-flex items-center text-primary underline underline-offset-2">See it on the map</Link>
+          <Link to={roofHref(ex.town.id, ex.r.id)} className="min-h-touch inline-flex items-center text-primary underline underline-offset-2">See it on the map</Link>
         </p>
         <Segmented label="Example roof" value={pick} onChange={setPick} options={examples.map((e) => ({ id: e.id, label: e.label }))} />
       </div>

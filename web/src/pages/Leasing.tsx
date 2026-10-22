@@ -5,7 +5,7 @@ import { fmt, loadJson } from '../lib/data'
 import type { YieldData } from '../lib/data'
 import { buildPlan, GOOD_SCORE, portfolioStore, SAMPLE_PORTFOLIO_ID } from '../lib/portfolio'
 import { leaseItemSat, leasingStore, useStore, type LeaseItem, type LeaseStatus } from '../lib/store'
-import { loadIndex, loadRoofs, scannedStore } from '../lib/townships'
+import { loadIndex, loadRoofs, roofHref, scannedStore } from '../lib/townships'
 
 const STATUS: { id: LeaseStatus; label: string; cls: string }[] = [
   { id: 'to_approach', label: 'To approach', cls: 'bg-page text-ink' },
@@ -42,7 +42,8 @@ export default function Leasing() {
   const portfolios = useStore(portfolioStore)
   const scanned = useStore(scannedStore)
   const [filter, setFilter] = useState<LeaseStatus | 'all'>('all')
-  const [target, setTarget] = useState<number | null>(null)
+  // roofs the sent plans can actually sign, and how many more they would need
+  const [target, setTarget] = useState<{ roofs: number; short: number } | null>(null)
 
   // First visit: show the sample Innovation Park pipeline. "Clear list" is respected afterwards.
   useEffect(() => {
@@ -61,7 +62,12 @@ export default function Leasing() {
     let live = true
     const sent = portfolios.filter((p) => p.status === 'Sent to leasing')
     Promise.all([loadIndex(), loadJson<YieldData>('yield.json')]).then(([d, y]) => {
-      if (live) setTarget(sent.length ? sent.reduce((a, p) => a + (buildPlan(p, d, y, scanned)?.roofsNeeded ?? 0), 0) : null)
+      if (!live) return
+      const plans = sent.map((p) => buildPlan(p, d, y, scanned)).filter((x) => x !== null)
+      setTarget(plans.length ? {
+        roofs: plans.reduce((a, pl) => a + Math.min(pl.roofsNeeded, pl.goodAvailable), 0),
+        short: plans.reduce((a, pl) => a + Math.max(0, pl.roofsNeeded - pl.goodAvailable), 0),
+      } : null)
     })
     return () => {
       live = false
@@ -69,7 +75,7 @@ export default function Leasing() {
   }, [portfolios, scanned])
 
   const counts = Object.fromEntries(STATUS.map((s) => [s.id, items.filter((i) => i.status === s.id).length])) as Record<LeaseStatus, number>
-  const needed = target ?? items.length
+  const needed = target?.roofs ?? items.length
   const ranked = [...items].sort((a, b) => b.score - a.score)
   const rows = ranked.map((r, i) => ({ r, rank: i + 1 })).filter(({ r }) => filter === 'all' || r.status === filter)
   const setStatus = (id: string, status: LeaseStatus) => leasingStore.set((l) => l.map((x) => (x.roofId === id ? { ...x, status } : x)))
@@ -102,7 +108,7 @@ export default function Leasing() {
             {STATUS.map((s) => (
               <li key={s.id} className="card px-6 py-5">
                 <div className="text-sm text-muted">{s.label}</div>
-                <div className="mt-2 text-[28px] font-medium leading-none num">{counts[s.id]}</div>
+                <div className="mt-2 text-[28px] font-medium leading-none num">{fmt(counts[s.id])}</div>
               </li>
             ))}
           </ul>
@@ -113,8 +119,11 @@ export default function Leasing() {
               <div className="bg-primary-light" style={{ width: pct(counts.interested) }} />
             </div>
             <p className="mt-2 text-[15px] text-muted">
-              <span className="num">{counts.signed}</span> signed + <span className="num">{counts.interested}</span> interested of{' '}
+              <span className="num">{fmt(counts.signed)}</span> signed + <span className="num">{fmt(counts.interested)}</span> interested of{' '}
               <span className="num">{fmt(needed)}</span> roofs needed{target ? '' : ' (roofs on the list)'}
+              {target && target.short > 0 && (
+                <span className="text-warn"> · plans sent are short by {fmt(target.short)} roofs; scan more townships</span>
+              )}
             </p>
           </div>
 
@@ -146,7 +155,7 @@ export default function Leasing() {
                       <td className="px-2 py-3 num">{rank}</td>
                       <td className="px-2 py-3">
                         {r.site !== 'business_park' && r.site !== 'homes' ? (
-                          <Link to={`/map?t=${r.site}&roof=${r.roofId}`} className="font-semibold underline decoration-line underline-offset-4 hover:decoration-primary">{r.label}</Link>
+                          <Link to={roofHref(r.site, r.roofId)} className="font-semibold underline decoration-line underline-offset-4 hover:decoration-primary">{r.label}</Link>
                         ) : (
                           <span className="font-semibold">{r.label}</span>
                         )}
