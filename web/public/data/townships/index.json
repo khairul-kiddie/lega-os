@@ -480,16 +480,21 @@
    "summary": {
     "buildings_detected": 2380,
     "solar_ready": 1813,
-    "good_roofs": 923,
-    "avg_mwh_good": 58.75,
-    "mwh_yr": 94873.2,
-    "kwp": 77636.6,
+    "good_roofs": 935,
+    "avg_mwh_good": 52.38,
+    "mwh_yr": 85695.7,
+    "kwp": 70519.2,
     "avg_score": 74.6,
     "by_class": {
-     "house": 1184,
-     "terrace": 242,
-     "medium": 287,
-     "large": 100
+     "house": 1201,
+     "terrace": 393,
+     "apartment": 0,
+     "commercial": 23,
+     "industrial": 21,
+     "public": 5,
+     "parking": 1,
+     "medium": 157,
+     "large": 12
     },
     "yield_kwh_kwp": 1287.4,
     "by_source": {
@@ -497,7 +502,7 @@
      "Google Open Buildings": 969,
      "Microsoft ML Buildings": 224
     },
-    "owners_for_1gwh": 8
+    "owners_for_1gwh": 24
    }
   },
   {
@@ -879,17 +884,22 @@
    "site": "Business park",
    "summary": {
     "buildings_detected": 200,
-    "solar_ready": 119,
-    "good_roofs": 63,
-    "avg_mwh_good": 88.77,
-    "mwh_yr": 7431.2,
-    "kwp": 6047.8,
-    "avg_score": 74.5,
+    "solar_ready": 113,
+    "good_roofs": 58,
+    "avg_mwh_good": 88.95,
+    "mwh_yr": 7174.8,
+    "kwp": 5829.9,
+    "avg_score": 74.4,
     "by_class": {
      "house": 83,
      "terrace": 0,
-     "medium": 34,
-     "large": 2
+     "apartment": 20,
+     "commercial": 0,
+     "industrial": 4,
+     "public": 0,
+     "parking": 0,
+     "medium": 5,
+     "large": 1
     },
     "yield_kwh_kwp": 1287.5,
     "by_source": {
@@ -897,7 +907,7 @@
      "OpenStreetMap": 31,
      "Microsoft ML Buildings": 20
     },
-    "owners_for_1gwh": 20
+    "owners_for_1gwh": 19
    }
   },
   {
@@ -1135,16 +1145,21 @@
    "summary": {
     "buildings_detected": 3524,
     "solar_ready": 2703,
-    "good_roofs": 1375,
-    "avg_mwh_good": 49.58,
-    "mwh_yr": 117852.1,
-    "kwp": 96696.9,
-    "avg_score": 74.6,
+    "good_roofs": 1420,
+    "avg_mwh_good": 46.2,
+    "mwh_yr": 118215.3,
+    "kwp": 96839.8,
+    "avg_score": 74.9,
     "by_class": {
-     "house": 1888,
-     "terrace": 355,
-     "medium": 381,
-     "large": 79
+     "house": 1720,
+     "terrace": 356,
+     "apartment": 5,
+     "commercial": 213,
+     "industrial": 67,
+     "public": 3,
+     "parking": 2,
+     "medium": 284,
+     "large": 53
     },
     "yield_kwh_kwp": 1287.0,
     "by_source": {
@@ -1152,7 +1167,7 @@
      "Google Open Buildings": 1033,
      "Microsoft ML Buildings": 895
     },
-    "owners_for_1gwh": 22
+    "owners_for_1gwh": 27
    }
   },
   {
@@ -1416,16 +1431,21 @@
    "summary": {
     "buildings_detected": 607,
     "solar_ready": 461,
-    "good_roofs": 241,
-    "avg_mwh_good": 27.83,
-    "mwh_yr": 12568.1,
-    "kwp": 10116.5,
+    "good_roofs": 242,
+    "avg_mwh_good": 27.65,
+    "mwh_yr": 12544.4,
+    "kwp": 10097.8,
     "avg_score": 74.5,
     "by_class": {
-     "house": 349,
-     "terrace": 63,
+     "house": 334,
+     "terrace": 76,
+     "apartment": 0,
+     "commercial": 1,
+     "industrial": 0,
+     "public": 2,
+     "parking": 0,
      "medium": 46,
-     "large": 3
+     "large": 2
     },
     "yield_kwh_kwp": 1319.8,
     "by_source": {
@@ -1433,7 +1453,7 @@
      "Microsoft ML Buildings": 118,
      "OpenStreetMap": 16
     },
-    "owners_for_1gwh": 33
+    "owners_for_1gwh": 35
    }
   },
   {
@@ -1473,16 +1493,21 @@
    "summary": {
     "buildings_detected": 3474,
     "solar_ready": 2736,
-    "good_roofs": 1420,
-    "avg_mwh_good": 53.51,
-    "mwh_yr": 122469.4,
-    "kwp": 99552.8,
-    "avg_score": 74.7,
+    "good_roofs": 1443,
+    "avg_mwh_good": 46.05,
+    "mwh_yr": 118666.9,
+    "kwp": 96612.8,
+    "avg_score": 74.9,
     "by_class": {
-     "house": 2111,
-     "terrace": 125,
-     "medium": 373,
-     "large": 127
+     "house": 2032,
+     "terrace": 145,
+     "apartment": 68,
+     "commercial": 247,
+     "industrial": 28,
+     "public": 41,
+     "parking": 1,
+     "medium": 137,
+     "large": 37
     },
     "yield_kwh_kwp": 1291.1,
     "by_source": {
@@ -1490,7 +1515,7 @@
      "Google Open Buildings": 951,
      "Microsoft ML Buildings": 340
     },
-    "owners_for_1gwh": 7
+    "owners_for_1gwh": 34
    }
   },
   {
@@ -1859,17 +1884,22 @@
    "site": null,
    "summary": {
     "buildings_detected": 7997,
-    "solar_ready": 7198,
-    "good_roofs": 3608,
-    "avg_mwh_good": 12.87,
-    "mwh_yr": 93398.5,
-    "kwp": 76982.3,
-    "avg_score": 74.4,
+    "solar_ready": 7193,
+    "good_roofs": 3694,
+    "avg_mwh_good": 12.99,
+    "mwh_yr": 92812.6,
+    "kwp": 76334.1,
+    "avg_score": 74.6,
     "by_class": {
-     "house": 7047,
-     "terrace": 24,
-     "medium": 111,
-     "large": 16
+     "house": 6549,
+     "terrace": 129,
+     "apartment": 3,
+     "commercial": 449,
+     "industrial": 0,
+     "public": 18,
+     "parking": 1,
+     "medium": 40,
+     "large": 4
     },
     "yield_kwh_kwp": 1290.7,
     "by_source": {
@@ -1877,7 +1907,7 @@
      "Google Open Buildings": 761,
      "Microsoft ML Buildings": 314
     },
-    "owners_for_1gwh": 89
+    "owners_for_1gwh": 77
    }
   },
   {
@@ -2119,16 +2149,21 @@
    "summary": {
     "buildings_detected": 2707,
     "solar_ready": 1805,
-    "good_roofs": 905,
-    "avg_mwh_good": 47.92,
-    "mwh_yr": 74587.0,
-    "kwp": 59663.8,
-    "avg_score": 74.3,
+    "good_roofs": 916,
+    "avg_mwh_good": 49.83,
+    "mwh_yr": 75842.2,
+    "kwp": 60500.9,
+    "avg_score": 74.4,
     "by_class": {
-     "house": 1272,
-     "terrace": 130,
-     "medium": 357,
-     "large": 46
+     "house": 1267,
+     "terrace": 117,
+     "apartment": 20,
+     "commercial": 20,
+     "industrial": 55,
+     "public": 2,
+     "parking": 0,
+     "medium": 304,
+     "large": 20
     },
     "yield_kwh_kwp": 1319.8,
     "by_source": {
@@ -2136,7 +2171,7 @@
      "Google Open Buildings": 1212,
      "OpenStreetMap": 108
     },
-    "owners_for_1gwh": 15
+    "owners_for_1gwh": 10
    }
   },
   {
@@ -2310,15 +2345,20 @@
    "summary": {
     "buildings_detected": 361,
     "solar_ready": 201,
-    "good_roofs": 109,
-    "avg_mwh_good": 38.49,
-    "mwh_yr": 7128.1,
-    "kwp": 5734.6,
-    "avg_score": 74.6,
+    "good_roofs": 111,
+    "avg_mwh_good": 38.6,
+    "mwh_yr": 7174.4,
+    "kwp": 5768.4,
+    "avg_score": 74.8,
     "by_class": {
-     "house": 134,
+     "house": 123,
      "terrace": 24,
-     "medium": 38,
+     "apartment": 0,
+     "commercial": 11,
+     "industrial": 0,
+     "public": 1,
+     "parking": 0,
+     "medium": 37,
      "large": 5
     },
     "yield_kwh_kwp": 1314.8,
@@ -2327,7 +2367,7 @@
      "Microsoft ML Buildings": 110,
      "OpenStreetMap": 13
     },
-    "owners_for_1gwh": 18
+    "owners_for_1gwh": 19
    }
   },
   {
@@ -2436,17 +2476,22 @@
    "site": null,
    "summary": {
     "buildings_detected": 658,
-    "solar_ready": 547,
-    "good_roofs": 273,
-    "avg_mwh_good": 78.73,
-    "mwh_yr": 32531.9,
-    "kwp": 26513.5,
-    "avg_score": 74.2,
+    "solar_ready": 557,
+    "good_roofs": 309,
+    "avg_mwh_good": 64.84,
+    "mwh_yr": 30836.2,
+    "kwp": 25055.0,
+    "avg_score": 75.3,
     "by_class": {
-     "house": 332,
-     "terrace": 35,
-     "medium": 149,
-     "large": 31
+     "house": 181,
+     "terrace": 33,
+     "apartment": 37,
+     "commercial": 2,
+     "industrial": 0,
+     "public": 237,
+     "parking": 0,
+     "medium": 57,
+     "large": 10
     },
     "yield_kwh_kwp": 1284.0,
     "by_source": {
@@ -2454,7 +2499,7 @@
      "Microsoft ML Buildings": 172,
      "Google Open Buildings": 21
     },
-    "owners_for_1gwh": 12
+    "owners_for_1gwh": 14
    }
   }
  ]

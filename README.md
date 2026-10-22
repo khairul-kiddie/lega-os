@@ -4,7 +4,7 @@
 
 **Live prototype:** https://khairul-kiddie.github.io/lega-os/
 
-SDP leases roofs in its townships, puts solar panels on them, and sells the power to nearby business buyers. The roofs are factories in Elmina Business Park and homes in City of Elmina. LEGA OS answers three questions:
+SDP leases roofs in its townships, puts solar panels on them, and sells the power to nearby business buyers. The roofs are homes, shops, public buildings and industrial buildings across SDP townships, starting with City of Elmina. LEGA OS answers three questions:
 
 1. **Which roofs should SDP lease?** Every roof gets a 0–100 score.
 2. **Which group of roofs covers a buyer's demand?** The portfolio builder sizes it, with a buffer for owners who back out.
@@ -32,7 +32,8 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Satellite imagery under the roofs | **Real** | Esri World Imagery tiles (with attribution) |
 | Township outlines | Real / approximate | OpenStreetMap boundary polygons via Nominatim, cached in `pipeline/data/raw/outlines/`. A building counts only if its centre is inside the outline. Ara Damansara has no mapped boundary, so it uses a ~2.4 km box around the geocoded centre |
 | Yield per township | **Real (simulated)** | pvlib on each township's own NASA POWER cell (1,284–1,320 kWh/kWp/yr) |
-| Roof type (house / terrace row / mid-size / factory), usable panel area | Estimated | Size-and-shape rule on the real footprint |
+| Roof type (house, terrace row, apartment, commercial, industrial, public, car park) | **Real where mapped** | The building's OpenStreetMap type, carried by Overture, plus building names (e.g. Elmina Lakeside Mall). Untagged buildings get a size rule and neutral labels ("Mid-size building", "Large building"); tanks and utility structures are left out |
+| Usable panel area | Estimated | Share of the real footprint by roof type: 45% for pitched house roofs, 55–65% for flat roofs |
 | Shading, roof condition, owner type, likelihood to sign | **Sample** | Fixed seed per roof. The footprints have no building heights, so shading can't be computed yet |
 | Buyers: Innovation Park (1,800 MWh/yr, office hours), Elmina Lakeside Mall (2,400 MWh/yr, mall hours) | **Sample** | Example buyers, not real contracts |
 | Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit with the best City of Elmina roofs for the Innovation Park plan; editable |
@@ -79,15 +80,15 @@ The work is precomputed by `python -m lega.townships`; the animation replays it,
 
 | Township | Buildings detected | Solar-ready roofs | Good roofs (75+) | Potential, GWh/yr |
 |---|---|---|---|---|
-| City of Elmina (homes) | 2,380 | 1,813 | 923 | 94.9 |
-| Elmina Business Park | 200 | 119 | 63 | 7.4 |
-| Bandar Bukit Raja | 3,524 | 2,703 | 1,375 | 117.9 |
-| Serenia City | 607 | 461 | 241 | 12.6 |
-| Ara Damansara (approx. box) | 3,474 | 2,736 | 1,420 | 122.5 |
-| Putra Heights | 7,997 | 7,198 | 3,608 | 93.4 |
-| Nilai Impian | 2,707 | 1,805 | 905 | 74.6 |
-| Bandar Ainsdale | 361 | 201 | 109 | 7.1 |
-| Bandar Universiti Pagoh | 658 | 547 | 273 | 32.5 |
+| City of Elmina (homes) | 2,380 | 1,813 | 935 | 85.7 |
+| Elmina Business Park | 200 | 113 | 58 | 7.2 |
+| Bandar Bukit Raja | 3,524 | 2,703 | 1,420 | 118.2 |
+| Serenia City | 607 | 461 | 242 | 12.5 |
+| Ara Damansara (approx. box) | 3,474 | 2,736 | 1,443 | 118.7 |
+| Putra Heights | 7,997 | 7,193 | 3,694 | 92.8 |
+| Nilai Impian | 2,707 | 1,805 | 916 | 75.8 |
+| Bandar Ainsdale | 361 | 201 | 111 | 7.2 |
+| Bandar Universiti Pagoh | 658 | 557 | 309 | 30.8 |
 
 **Caveats:**
 - **Why outlines, not boxes.** An earlier version took every building in each township's bounding box. For City of Elmina that pulled in Kampung Kubu Gajah and other neighbouring areas: only 716 of its 4,697 "Elmina" roofs were actually inside Elmina. Scans are now clipped to the OpenStreetMap outline, and a test checks that every roof lies inside it.
@@ -95,7 +96,8 @@ The work is precomputed by `python -m lega.townships`; the animation replays it,
 - **Still not complete.** Outlines reflect each source's imagery date, so the newest phases and land under construction may be missing. Elmina Business Park shows 200 buildings; planned or newly built units appear once the building datasets catch up (or, in production, from SDP layouts and drone surveys).
 - **Township boundaries are OpenStreetMap's**, not SDP's. If SDP's official City of Elmina boundary includes areas outside the OSM outline, those roofs are not counted. Confirm against SDP's list.
 - Potential assumes every solar-ready roof is leased.
-- Factory roofs dominate the totals. Bukit Raja's largest roof inside its outline is about 31,500 m².
+- Large flat roofs dominate the totals. Bukit Raja's largest roof inside its outline is an industrial building of about 31,500 m².
+- **Why typed labels.** An earlier version called every outline over 1,500 m² a "factory". In City of Elmina, 66 of those 98 "factories" were terrace blocks that OpenStreetMap draws as one outline, plus the Lakeside Mall, a school, a car park and a water tank. Labels now follow the mapped building type; City of Elmina has 21 industrial buildings, mostly in its south-east corner.
 
 ## Results
 

@@ -25,7 +25,7 @@ const FILTERS: { id: LeaseStatus | 'all'; label: string }[] = [
 ]
 
 function nextStep(r: LeaseItem): string {
-  const home = r.label.startsWith('Lot') || r.label.startsWith('House') || r.label.startsWith('Terrace')
+  const home = !!r.home
   switch (r.status) {
     case 'to_approach': return home ? 'Door visit' : 'Book a site visit'
     case 'visited': return 'Follow up within a week'
@@ -35,7 +35,7 @@ function nextStep(r: LeaseItem): string {
   }
 }
 
-const SEEDED_KEY = 'lega.leasing.seeded.v5'
+const SEEDED_KEY = 'lega.leasing.seeded.v6'
 
 export default function Leasing() {
   const items = useStore(leasingStore)
@@ -80,7 +80,7 @@ export default function Leasing() {
   const rows = ranked.map((r, i) => ({ r, rank: i + 1 })).filter(({ r }) => filter === 'all' || r.status === filter)
   const setStatus = (id: string, status: LeaseStatus) => leasingStore.set((l) => l.map((x) => (x.roofId === id ? { ...x, status } : x)))
   const sentNames = portfolios.filter((p) => p.status === 'Sent to leasing').map((p) => p.buyer)
-  const allHomes = items.length > 0 && items.every((i) => i.label.startsWith('Lot') || i.label.startsWith('House') || i.label.startsWith('Terrace'))
+  const allHomes = items.length > 0 && items.every((i) => i.home)
   const subtitle = `${allHomes ? 'Homes' : 'Roofs'} to approach${sentNames.length === 1 ? ` for the ${sentNames[0]} portfolio` : ''}, best first · sample data`
   const pct = (n: number) => `${Math.min(100, (n / Math.max(needed, 1)) * 100)}%`
 

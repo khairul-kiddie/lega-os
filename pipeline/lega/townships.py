@@ -56,16 +56,32 @@ TOWNSHIPS = [
 ]
 
 # usable panel share of the roof footprint and kWp per m² of panel area
-USABLE = {"house": 0.45, "terrace": 0.45, "medium": 0.55, "large": 0.65}
+# Roof classes. Tagged buildings (OpenStreetMap types carried by Overture) get their real type;
+# untagged ones fall back to a size/shape rule and get neutral labels ("Mid-size" / "Large building").
+USABLE = {"house": 0.45, "terrace": 0.45, "apartment": 0.55, "commercial": 0.60, "industrial": 0.65,
+          "public": 0.55, "parking": 0.60, "medium": 0.55, "large": 0.65}
+FLAT = {"commercial", "industrial", "public", "parking", "large"}  # flat or low-pitch roofs: no orientation loss
 M2_PER_KWP = 6.5
 MIN_KWP = 3.0  # below this a roof isn't worth a lease
-CLASS_LABEL = {"house": "House", "terrace": "Terrace row", "medium": "Shophouse / mid-size", "large": "Factory / large flat roof"}
+CLASS_LABEL = {"house": "House", "terrace": "Terrace row", "apartment": "Apartment block", "commercial": "Commercial",
+               "industrial": "Industrial", "public": "Public building", "parking": "Car park",
+               "medium": "Mid-size building", "large": "Large building"}
 OWNERS = {
     "house": [("Owner-occupier", 0.8), ("Landlord", 0.2)],
     "terrace": [("Owner-occupier", 0.8), ("Landlord", 0.2)],
+    "apartment": [("Management body", 1.0)],
+    "commercial": [("Investor landlord", 0.6), ("Owner-occupier", 0.4)],
+    "industrial": [("Owner-occupier", 0.55), ("Investor landlord", 0.35), ("Multinational tenant", 0.10)],
+    "public": [("Public body", 1.0)],
+    "parking": [("Investor landlord", 0.6), ("Public body", 0.4)],
     "medium": [("Owner-occupier", 0.5), ("Investor landlord", 0.5)],
-    "large": [("Owner-occupier", 0.55), ("Investor landlord", 0.35), ("Multinational tenant", 0.10)],
+    "large": [("Owner-occupier", 0.5), ("Investor landlord", 0.4), ("Multinational tenant", 0.10)],
 }
+HOUSE_TYPES = {"house", "detached", "semidetached_house", "bungalow", "static_caravan"}
+COMMERCIAL_TYPES = {"commercial", "retail", "office", "supermarket", "hotel", "kiosk"}
+INDUSTRIAL_TYPES = {"industrial", "warehouse", "factory", "manufacture"}
+PARKING_TYPES = {"parking", "carport", "garage", "garages"}
+PUBLIC_SUBTYPES = {"education", "civic", "religious", "medical", "entertainment", "transportation"}
 assert all(o in LIKELIHOOD_BASE for v in OWNERS.values() for o, _ in v)
 
 
@@ -175,6 +191,7 @@ def simplify_ring(xy, eps):
 
 
 def classify(area: float, w: float, h: float) -> str:
+    """Size/shape fallback for buildings with no type tag."""
     long, short = max(w, h), max(min(w, h), 0.1)
     if area < 300:
         return "house"
@@ -183,6 +200,37 @@ def classify(area: float, w: float, h: float) -> str:
     if area < 1500:
         return "medium"
     return "large"
+
+
+def classify_building(props: dict, area: float, w: float, h: float) -> str | None:
+    """Roof class from the building's OpenStreetMap type when it has one, else the size rule.
+    None = not a leasable roof (tanks, utility structures)."""
+    sub, cl = props.get("subtype"), props.get("class")
+    name = ((props.get("names") or {}).get("primary") or "").lower()
+    if sub == "service" or "tank" in name or cl in {"storage_tank", "water_tower", "silo"}:
+        return None
+    long, short = max(w, h), max(min(w, h), 0.1)
+    if sub == "residential":
+        if cl == "terrace" or long / short >= 3:
+            return "terrace"
+        if area < 300 or cl in HOUSE_TYPES:
+            return "house"
+        return "apartment"
+    if cl in PARKING_TYPES:
+        return "parking"
+    if sub == "commercial" or cl in COMMERCIAL_TYPES:
+        return "commercial"
+    if sub == "industrial" or cl in INDUSTRIAL_TYPES:
+        return "industrial"
+    if sub in PUBLIC_SUBTYPES:
+        return "public"
+    # untagged but named: a few unambiguous name words
+    if sub is None and name:
+        if "plaza tol" in name or "toll" in name:
+            return "public"
+        if any(k in name for k in ("mall", "supermarket", "hypermarket", "hotel", "pavilion", "sales gallery")):
+            return "commercial"
+    return classify(area, w, h)
 
 
 def rng_for(rid: str) -> np.random.Generator:
@@ -194,7 +242,7 @@ def scan(t: dict) -> dict:
     s, n, w, e = outline_bbox(polys)
     lat0 = (s + n) / 2
     site_yield = annual_yield(lat0, (w + e) / 2)
-    feats, srcs = [], []
+    feats, srcs, props = [], [], []
     with open(buildings(t, [s, n, w, e])) as fh:
         for line in fh:
             f = json.loads(line)
@@ -212,19 +260,22 @@ def scan(t: dict) -> dict:
                 continue
             feats.append(ring)
             srcs.append(SRC_CODE.get((f["properties"].get("sources") or [{}])[0].get("dataset"), "x"))
+            props.append(f["properties"])
 
     ox, oy = w, s  # local origin for compact integer coords (decimetres)
     kx = M_PER_DEG_LAT * math.cos(math.radians(lat0))
-    cols = {k: [] for k in ("id", "cls", "poly", "area", "kwp", "mwh", "score", "parts", "units", "spec", "shade", "age", "lease", "owner", "headline", "why", "cx", "cy", "src")}
+    cols = {k: [] for k in ("id", "cls", "name", "poly", "area", "kwp", "mwh", "score", "parts", "units", "spec", "shade", "age", "lease", "owner", "headline", "why", "cx", "cy", "src")}
     n_all = 0
     n_src = {}
-    for i, (ring, src) in enumerate(sorted(zip(feats, srcs), key=lambda rs: (round(rs[0][0][1], 4), rs[0][0][0]))):
+    for i, (ring, src, pr) in enumerate(sorted(zip(feats, srcs, props), key=lambda rs: (round(rs[0][0][1], 4), rs[0][0][0]))):
         xy = to_xy(ring, lat0)
         a = area_m2(xy)
         n_all += 1
         n_src[src] = n_src.get(src, 0) + 1
         rw, rh = min_rect(xy)
-        cls = classify(a, rw, rh)
+        cls = classify_building(pr, a, rw, rh)
+        if cls is None:  # tanks and utility structures: not a roof to lease
+            continue
         usable = a * USABLE[cls]
         kwp = usable / M2_PER_KWP
         if kwp < MIN_KWP:
@@ -233,7 +284,7 @@ def scan(t: dict) -> dict:
         r = rng_for(rid)
         owners, probs = zip(*OWNERS[cls])
         shading = float(np.clip(r.normal(82, 12), 25, 100))          # SAMPLE
-        orient_loss = 0.0 if cls == "large" else r.uniform(0, 0.06)   # flat vs pitched, SAMPLE
+        orient_loss = 0.0 if cls in FLAT else r.uniform(0, 0.06)     # flat vs pitched, SAMPLE
         condition = float(np.clip(r.normal(72, 15), 15, 100))         # SAMPLE
         owner = str(r.choice(owners, p=probs))
         years_left, attended, age = int(r.integers(4, 30)), bool(r.random() < 0.25), int(r.integers(1, 25))
@@ -246,7 +297,7 @@ def scan(t: dict) -> dict:
         poly = [round(v) for x, y in simple for v in ((x - ox * kx) * 10, (y - oy * M_PER_DEG_LAT) * 10)]
         cx = sum(p[0] for p in ring[:-1]) / (len(ring) - 1)
         cy = sum(p[1] for p in ring[:-1]) / (len(ring) - 1)
-        for k, v in (("id", rid), ("cls", cls), ("poly", poly), ("area", round(a)), ("kwp", round(kwp, 1)), ("mwh", round(kwp * spec / 1000, 2)),
+        for k, v in (("id", rid), ("cls", cls), ("name", (pr.get("names") or {}).get("primary") or ""), ("poly", poly), ("area", round(a)), ("kwp", round(kwp, 1)), ("mwh", round(kwp * spec / 1000, 2)),
                      ("score", score), ("parts", [round(parts[k]) for k in WEIGHTS]), ("units", max(1, round(a / 110)) if cls == "terrace" else 1),
                      ("spec", round(spec)), ("shade", round(shade_loss, 1)), ("age", age), ("lease", years_left), ("owner", owner),
                      ("headline", headline(parts, shade_loss, age, owner, attended, years_left)), ("why", why),

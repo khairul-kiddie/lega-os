@@ -2,7 +2,7 @@ import { loadJson } from './data'
 import type { Roof, ScorePart } from './data'
 import { createStore } from './store'
 
-export type RoofClass = 'house' | 'terrace' | 'medium' | 'large'
+export type RoofClass = 'house' | 'terrace' | 'apartment' | 'commercial' | 'industrial' | 'public' | 'parking' | 'medium' | 'large'
 
 export interface TownshipSummary {
   buildings_detected: number
@@ -52,6 +52,8 @@ interface TownshipFile {
   class_label: Record<RoofClass, string>
   id: string[]
   cls: RoofClass[]
+  /** building name from OpenStreetMap, '' if none */
+  name: string[]
   poly: number[][]
   area: number[]
   kwp: number[]
@@ -86,8 +88,19 @@ export interface SatRoof extends Roof {
   source: string
 }
 
-export const CLASS_SHORT: Record<RoofClass, string> = { house: 'House', terrace: 'Terrace row', medium: 'Mid-size', large: 'Factory' }
-export const isHome = (c: RoofClass) => c === 'house' || c === 'terrace'
+/** Short label per roof type. Typed buildings use their OpenStreetMap type; untagged ones get neutral size labels. */
+export const CLASS_SHORT: Record<RoofClass, string> = {
+  house: 'House', terrace: 'Terrace row', apartment: 'Apartment block', commercial: 'Commercial', industrial: 'Industrial',
+  public: 'Public building', parking: 'Car park', medium: 'Mid-size building', large: 'Large building',
+}
+/** Plural labels for the "What the scan found" list, in display order. */
+export const CLASS_PLURAL: [RoofClass, string][] = [
+  ['house', 'Houses'], ['terrace', 'Terrace rows'], ['apartment', 'Apartment blocks'], ['commercial', 'Commercial'],
+  ['industrial', 'Industrial'], ['public', 'Public buildings (schools, civic)'], ['parking', 'Car parks'],
+  ['medium', 'Mid-size, type unknown'], ['large', 'Large, type unknown'],
+]
+export const isHome = (c: RoofClass) => c === 'house' || c === 'terrace' || c === 'apartment'
+const FLAT: RoofClass[] = ['commercial', 'industrial', 'public', 'parking', 'large']
 
 export const loadIndex = () => loadJson<TownshipIndex>('townships/index.json')
 
@@ -107,7 +120,7 @@ export function loadRoofs(id: string): Promise<SatRoof[]> {
           const cls = f.cls[i]
           return {
             id: rid,
-            label: `${CLASS_SHORT[cls]} ${rid.slice(rid.lastIndexOf('-') + 1)}`,
+            label: f.name?.[i] || `${CLASS_SHORT[cls]} ${rid.slice(rid.lastIndexOf('-') + 1)}`,
             score: f.score[i],
             parts,
             area_m2: f.area[i],
@@ -119,7 +132,7 @@ export function loadRoofs(id: string): Promise<SatRoof[]> {
             lease_years_left: f.lease[i],
             why: f.why[i],
             headline: f.headline[i],
-            aspect: cls === 'large' || cls === 'medium' ? 'Flat roof' : 'Pitched roof',
+            aspect: FLAT.includes(cls) ? 'Flat roof' : 'Pitched roof',
             usable_m2: Math.round(f.kwp[i] * 6.5),
             shade_loss_pct: f.shade[i],
             cls,

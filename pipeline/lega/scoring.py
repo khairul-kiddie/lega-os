@@ -6,7 +6,8 @@ building heights and surveys are available; likelihood to sign is rule-based on 
 import numpy as np
 
 WEIGHTS = {"yield": 0.4, "shading": 0.2, "condition": 0.2, "likelihood": 0.2}
-LIKELIHOOD_BASE = {"Owner-occupier": 68, "Investor landlord": 48, "Multinational tenant": 58, "Landlord": 42}
+LIKELIHOOD_BASE = {"Owner-occupier": 68, "Investor landlord": 48, "Multinational tenant": 58, "Landlord": 42,
+                   "Management body": 40, "Public body": 55}
 
 
 def yield_score(specific_yield: float, site_yield: float) -> float:

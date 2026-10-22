@@ -57,3 +57,26 @@ def test_elmina_excludes_kampung_kubu_gajah():
     d = json.loads((DIR / "elmina.json").read_text())
     in_kubu_core = sum(3.195 <= y <= 3.21 and 101.512 <= x <= 101.527 for x, y in zip(d["cx"], d["cy"]))
     assert in_kubu_core == 0
+
+
+def test_roof_types_follow_building_tags():
+    """Regression: terrace blocks were labelled 'Factory' because the size rule saw one big outline."""
+    from lega.townships import classify_building
+
+    assert classify_building({"subtype": "residential", "class": "terrace"}, 3264, 120, 27) == "terrace"
+    assert classify_building({"subtype": "residential", "class": "house"}, 180, 15, 12) == "house"
+    assert classify_building({"subtype": "commercial", "class": "retail"}, 24581, 180, 136) == "commercial"
+    assert classify_building({"subtype": "industrial", "class": "industrial"}, 13299, 140, 95) == "industrial"
+    assert classify_building({"subtype": "education", "class": "school"}, 4775, 90, 53) == "public"
+    assert classify_building({"subtype": "transportation", "class": "parking"}, 4234, 70, 60) == "parking"
+    assert classify_building({"subtype": "service", "class": "storage_tank"}, 900, 30, 30) is None
+    assert classify_building({"names": {"primary": "Water Balancing Tank"}}, 4531, 70, 65) is None
+    assert classify_building({}, 4000, 80, 50) == "large"  # untagged: neutral label, not "factory"
+    assert classify_building({"names": {"primary": "Elmina Lakeside Mall"}}, 24581, 180, 136) == "commercial"
+    assert classify_building({"names": {"primary": "Plaza Tol Elmina"}}, 1570, 100, 15) == "public"
+
+
+def test_no_factory_label_anywhere():
+    for meta in INDEX["townships"]:
+        d = json.loads((DIR / f"{meta['id']}.json").read_text())
+        assert "Factory" not in json.dumps(d["class_label"])

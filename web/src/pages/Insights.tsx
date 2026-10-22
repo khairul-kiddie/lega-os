@@ -214,12 +214,12 @@ function RoofTab() {
       const byScore = (xs: SatRoof[]) => [...xs].sort((a, b) => b.score - a.score || b.kwp - a.kwp)
       const median = (xs: SatRoof[]) => [...xs.map((r) => r.shade_loss_pct)].sort((a, b) => a - b)[Math.floor(xs.length / 2)]
       const eH = byScore(elmina.filter((r) => isHome(r.cls)))
-      const rL = byScore(raja.filter((r) => r.cls === 'large'))
+      const rL = byScore(raja.filter((r) => r.cls === 'industrial'))
       const eAll = byScore(elmina)
       const mE = median(elmina)
       setExamples([
         { id: 'home', label: 'Best home', r: eH[0], town: town('elmina'), median: mE },
-        { id: 'factory', label: 'Best factory', r: rL[0], town: town('bukit-raja'), median: median(raja) },
+        { id: 'industrial', label: 'Best industrial roof', r: rL[0], town: town('bukit-raja'), median: median(raja) },
         { id: 'median', label: 'Median roof', r: eAll[Math.floor(eAll.length / 2)], town: town('elmina'), median: mE },
         { id: 'weak', label: 'Weakest roof', r: eAll[eAll.length - 1], town: town('elmina'), median: mE },
       ])

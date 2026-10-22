@@ -7,7 +7,7 @@ import { fmt, useJson } from '../lib/data'
 import type { ScorePart } from '../lib/data'
 import { leaseItemSat, leasingStore, shortlistStore, useStore } from '../lib/store'
 import {
-  CLASS_SHORT,
+  CLASS_PLURAL,
   groupScanned,
   isHome,
   loadRoofs,
@@ -387,14 +387,20 @@ function TownshipView({ group, sites, site, scanned, index, onSite, onAll, onSca
 
 /* ---------------- Satellite results ---------------- */
 
-type Filter = 'all' | 'homes' | 'medium' | 'large'
+type Filter = 'all' | 'homes' | 'commercial' | 'industrial' | 'other'
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All roofs' },
   { id: 'homes', label: 'Homes' },
-  { id: 'medium', label: 'Mid-size' },
-  { id: 'large', label: 'Factories' },
+  { id: 'commercial', label: 'Commercial & public' },
+  { id: 'industrial', label: 'Industrial' },
+  { id: 'other', label: 'Type unknown' },
 ]
-const matches = (f: Filter, c: RoofClass) => f === 'all' || (f === 'homes' ? isHome(c) : c === f)
+const FILTER_CLASSES: Record<Exclude<Filter, 'all' | 'homes'>, RoofClass[]> = {
+  commercial: ['commercial', 'public', 'parking'],
+  industrial: ['industrial'],
+  other: ['medium', 'large'],
+}
+const matches = (f: Filter, c: RoofClass) => f === 'all' || (f === 'homes' ? isHome(c) : FILTER_CLASSES[f].includes(c))
 
 function SatelliteView({ meta, scanned, onScan, source, minKwp, initialRoof }: { meta: TownshipMeta; scanned: boolean; onScan: () => void; source: string; minKwp: number; initialRoof: string | null }) {
   const [roofs, setRoofs] = useState<SatRoof[] | null>(null)
@@ -514,12 +520,12 @@ function SatelliteView({ meta, scanned, onScan, source, minKwp, initialRoof }: {
             <section className="card p-6" aria-labelledby="mix-h">
               <h2 id="mix-h" className="text-lg font-semibold">What the scan found</h2>
               <ul className="mt-3 space-y-2 text-[15px]">
-                {(Object.keys(CLASS_SHORT) as RoofClass[]).map((c) => (
-                  <li key={c} className="flex justify-between"><span>{c === 'large' ? 'Factories / large flat roofs' : c === 'medium' ? 'Shophouses / mid-size' : c === 'terrace' ? 'Terrace rows' : 'Houses'}</span><span className="num">{fmt(s.by_class[c])}</span></li>
+                {CLASS_PLURAL.filter(([c]) => s.by_class[c] > 0).map(([c, label]) => (
+                  <li key={c} className="flex justify-between"><span>{label}</span><span className="num">{fmt(s.by_class[c])}</span></li>
                 ))}
               </ul>
               <p className="mt-3 text-xs text-muted">
-                Roof type is estimated from footprint size and shape. Outlines from{' '}
+                Roof type comes from the building’s OpenStreetMap type where mapped; otherwise only its size is known (“type unknown”). Outlines from{' '}
                 {Object.entries(s.by_source).map(([k, v]) => `${k} (${fmt(v)})`).join(', ')}.
               </p>
             </section>

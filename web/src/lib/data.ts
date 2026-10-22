@@ -4,7 +4,7 @@ export type ScorePart = 'yield' | 'shading' | 'condition' | 'likelihood'
 
 export interface Roof {
   id: string
-  /** Display name, e.g. "House 01370" or "Factory 00200". */
+  /** Display name: the building's name if mapped (e.g. "Elmina Lakeside Mall"), else type + number ("House 01370"). */
   label: string
   score: number
   parts: Record<ScorePart, number>
