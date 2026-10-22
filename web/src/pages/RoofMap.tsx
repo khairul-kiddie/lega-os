@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Kpi, PageHeader, SampleNote } from '../components/ui'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Kpi, PageHeader, Segmented } from '../components/ui'
+import { newPortfolio, portfolioStore } from '../lib/portfolio'
 import SiteMap, { MapLegend, ZoneCrop } from '../components/SiteMap'
-import { fmt, ownersFor, scoreBand, SITE_LABEL, useJson } from '../lib/data'
+import { fmt, ownersFor, scoreBand, SITE_LABEL, TYPE_PLURAL, useJson } from '../lib/data'
 import type { Roof, RoofsData, ScorePart, Site, SiteKey, Zone } from '../lib/data'
-import { leasingStore, shortlistStore, useStore } from '../lib/store'
+import { groupName, leaseItem, leasingStore, shortlistStore, useStore } from '../lib/store'
 
 export default function RoofMap() {
   const { data, error } = useJson<RoofsData>('roofs.json')
@@ -28,69 +29,72 @@ export default function RoofMap() {
 
   if (zone) return <ZoneView data={data} site={site} siteKey={siteKey} zone={zone} onBack={() => go({ zone: null })} />
 
-  return <Overview data={data} site={site} siteKey={siteKey} onSite={(s) => go({ site: s, zone: null })} onZone={(z) => go({ zone: z.id })} />
+  return <Overview site={site} siteKey={siteKey} onSite={(s) => go({ site: s, zone: null })} onZone={(z) => go({ zone: z.id })} />
 }
 
-function SiteToggle({ value, onChange }: { value: SiteKey; onChange: (s: SiteKey) => void }) {
-  return (
-    <div role="group" aria-label="Site" className="inline-flex rounded-lg border border-line bg-card p-1">
-      {(['business_park', 'homes'] as SiteKey[]).map((s) => (
-        <button
-          key={s}
-          type="button"
-          aria-pressed={value === s}
-          onClick={() => onChange(s)}
-          className={`min-h-touch rounded-md px-4 text-sm font-medium ${value === s ? 'bg-primary text-white' : 'text-muted hover:text-ink'}`}
-        >
-          {SITE_LABEL[s]}
-        </button>
-      ))}
-    </div>
-  )
-}
+const SITE_OPTIONS: { id: SiteKey; label: string }[] = [
+  { id: 'business_park', label: 'Business park' },
+  { id: 'homes', label: 'Homes' },
+]
 
-function Overview({ data, site, siteKey, onSite, onZone }: { data: RoofsData; site: Site; siteKey: SiteKey; onSite: (s: SiteKey) => void; onZone: (z: Zone) => void }) {
+function Overview({ site, siteKey, onSite, onZone }: { site: Site; siteKey: SiteKey; onSite: (s: SiteKey) => void; onZone: (z: Zone) => void }) {
   const [hover, setHover] = useState<string | null>(null)
+  const navigate = useNavigate()
   const roofs = useMemo(() => site.zones.flatMap((z) => z.roofs), [site])
   const gwh = roofs.reduce((a, r) => a + r.mwh_yr, 0) / 1000
   const strong = site.zones.filter((z) => z.summary.avg_score >= 75).length
-  const owners = ownersFor(roofs, 1000)
+  // factories only on the business park (commercial roofs are SDP-owned malls), homes on the homes site
+  const ownerRoofs = siteKey === 'business_park' ? site.zones.filter((z) => z.type === 'f' || z.type === 'm').flatMap((z) => z.roofs) : roofs
+  const owners = ownersFor(ownerRoofs, 1000)
   const best = [...site.zones].sort((a, b) => b.summary.avg_score - a.summary.avg_score).slice(0, 7)
+  const name = siteKey === 'business_park' ? 'Elmina Business Park' : 'City of Elmina homes'
+
+  const build = () => {
+    const p = newPortfolio()
+    portfolioStore.set((l) => [p, ...l])
+    navigate(`/portfolio/${p.id}/details`)
+  }
 
   return (
     <>
       <PageHeader
+        eyebrow={name}
         title="Roof map"
-        subtitle={siteKey === 'business_park' ? 'Elmina Business Park — every zone scored on yield, shading, roof condition and owner interest.' : 'City of Elmina homes — illustrative precinct layout.'}
-        right={<SiteToggle value={siteKey} onChange={onSite} />}
+        subtitle={`${name} · click a zone to zoom in · sample data`}
+        right={
+          <>
+            <Segmented label="Site" options={SITE_OPTIONS} value={siteKey} onChange={onSite} />
+            <button type="button" className="btn-primary !text-base" onClick={build}>Build portfolio</button>
+          </>
+        }
       />
-      <div className="mb-4"><SampleNote /></div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Roofs scanned" value={fmt(roofs.length)} hint={`${site.zones.length} zones`} />
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Kpi label="Roofs scanned" value={fmt(roofs.length)} />
         <Kpi label="Zones scoring 75+" value={strong} unit={`of ${site.zones.length}`} />
-        <Kpi label="Solar potential" value={fmt(gwh, 1)} unit="GWh/yr" hint={`at ${fmt(data.site_yield_kwh_kwp)} kWh/kWp/yr (pvlib)`} />
-        <Kpi label="Owners to sign for 1 GWh" value={owners ?? '—'} hint={owners ? 'best-scoring roofs first' : 'not enough roofs on this site'} />
+        <Kpi label="Solar potential" value={fmt(gwh, 1)} unit="GWh/yr" />
+        <Kpi label="Owners to sign for 1 GWh" value={owners ?? '—'} unit={owners ? (siteKey === 'business_park' ? 'factory owners' : 'home owners') : 'not enough roofs'} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="card p-4" aria-label="Site map">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-semibold">{SITE_LABEL[siteKey]} — click a zone</h2>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <section className="card p-5" aria-label="Site map">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold">Site overview · average roof score per zone</h2>
             <MapLegend />
           </div>
-          <div className="mx-auto max-w-[720px]">
-            <SiteMap site={site} onSelect={onZone} highlight={hover} />
-          </div>
-          <p className="mt-2 text-xs text-muted">
-            {site.image ? 'Base map: Sime Darby Property. Zone outlines hand-placed.' : 'Illustrative layout, not real precinct boundaries.'}
+          <SiteMap site={site} onSelect={onZone} highlight={hover} />
+          <p className="mt-3 text-sm text-muted">
+            {site.image
+              ? 'Base map: SDP master plan for the prototype. Live version uses satellite imagery and detected roof outlines.'
+              : 'Illustrative layout, not real precinct boundaries. Live version uses satellite imagery and detected roof outlines.'}
           </p>
         </section>
 
         <aside className="space-y-6">
-          <section className="card p-4" aria-labelledby="best-zones">
-            <h2 id="best-zones" className="font-semibold">Best zones to start with</h2>
-            <ol className="mt-3 space-y-1">
-              {best.map((z, i) => (
+          <section className="card p-6" aria-labelledby="best-zones">
+            <h2 id="best-zones" className="text-lg font-semibold">Best zones to start with</h2>
+            <p className="mt-2 text-[15px] text-muted">Click a zone on the map or below to zoom in</p>
+            <ol className="mt-4 space-y-3">
+              {best.map((z) => (
                 <li key={z.id}>
                   <button
                     type="button"
@@ -99,38 +103,32 @@ function Overview({ data, site, siteKey, onSite, onZone }: { data: RoofsData; si
                     onMouseLeave={() => setHover(null)}
                     onFocus={() => setHover(z.id)}
                     onBlur={() => setHover(null)}
-                    className="flex w-full min-h-touch items-center gap-3 rounded-lg px-2 text-left hover:bg-page"
+                    className="flex w-full items-center gap-4 rounded-card border border-line px-4 py-3 text-left hover:border-primary/50 hover:bg-page"
                   >
-                    <span className="w-5 text-xs text-muted num">{i + 1}</span>
-                    <span className="flex-1">
-                      <span className="block text-sm font-medium">{z.id}</span>
-                      <span className="block text-xs text-muted">
-                        {data.type_label[z.type]} · {z.summary.n_roofs} roofs · {fmt(z.summary.mwh_yr / 1000, 2)} GWh/yr
-                      </span>
+                    <ScoreBadge score={z.summary.avg_score} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">{z.id.startsWith('Precinct') ? z.id : `Zone ${z.id}`}</span>
+                      <span className="block text-sm text-muted">{TYPE_PLURAL[z.type]} · {z.summary.n_roofs} roofs</span>
                     </span>
-                    <ScorePill score={z.summary.avg_score} />
+                    <span className="num text-sm">{fmt(z.summary.mwh_yr / 1000, 1)} GWh</span>
                   </button>
                 </li>
               ))}
             </ol>
           </section>
-          <section className="card border-l-4 border-l-amber p-4">
-            <h2 className="text-sm font-semibold">Tip: factories vs homes</h2>
-            <p className="mt-2 text-sm text-muted leading-relaxed">
-              One factory roof (~90–190 kWp) does the work of 17–35 terrace homes (~5 kWp each), so the business park needs far fewer
-              signatures per GWh. Homes spread the risk: losing one owner barely moves the total, and residents become visible champions
-              for the township.
-            </p>
-          </section>
+          <p className="rounded-card bg-amber-soft px-5 py-4 text-[15px] leading-relaxed">
+            Factory roofs here are about 9–19× larger than a house roof (720–1,500 m² vs 80 m²), so one signed factory can replace a whole
+            street of homes.
+          </p>
         </aside>
       </div>
     </>
   )
 }
 
-export function ScorePill({ score }: { score: number }) {
-  const cls = score >= 80 ? 'bg-primary text-white' : score >= 70 ? 'bg-amber text-ink' : 'bg-page text-ink border border-line'
-  return <span className={`rounded-md px-2 py-0.5 text-sm font-semibold num ${cls}`}>{Math.round(score)}</span>
+function ScoreBadge({ score }: { score: number }) {
+  const cls = score >= 80 ? 'bg-primary text-white' : score >= 70 ? 'bg-amber text-ink' : 'border border-ink/40 bg-card text-ink'
+  return <span className={`grid h-11 w-14 shrink-0 place-items-center rounded-lg text-lg font-semibold num ${cls}`}>{Math.round(score)}</span>
 }
 
 const TILE: Record<string, string> = {
@@ -160,7 +158,7 @@ function ZoneView({ data, site, siteKey, zone, onBack }: { data: RoofsData; site
         <span className="text-muted">/ {SITE_LABEL[siteKey]} /</span>
         <span className="font-medium">{zone.id}</span>
       </nav>
-      <PageHeader title={`Zone ${zone.id}`} subtitle={`${data.type_label[zone.type]} · ${zone.rows} × ${zone.cols} roofs`} right={<SampleNote />} />
+      <PageHeader eyebrow={SITE_LABEL[siteKey]} title={groupName(zone)} subtitle={`${TYPE_PLURAL[zone.type]} · ${zone.rows} × ${zone.cols} roofs · sample data`} />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Kpi label="Roofs" value={s.n_roofs} />
@@ -189,7 +187,7 @@ function ZoneView({ data, site, siteKey, zone, onBack }: { data: RoofsData; site
                     type="button"
                     onClick={() => setRoofId(r.id)}
                     aria-pressed={r.id === roof.id}
-                    aria-label={`Roof ${r.id}, score ${r.score}`}
+                    aria-label={`Roof ${r.label}, score ${r.score}`}
                     className={`min-h-touch rounded-md border text-xs font-semibold num ${TILE[scoreBand(r.score)]} ${
                       r.id === roof.id ? 'ring-2 ring-ink ring-offset-2' : 'hover:brightness-95'
                     }`}
@@ -220,19 +218,15 @@ function RoofPanel({ data, roof, zone, siteKey }: { data: RoofsData; roof: Roof;
   const inLeasing = leasing.some((l) => l.roofId === roof.id)
   const inShortlist = shortlist.includes(roof.id)
 
-  const addLeasing = () =>
-    leasingStore.set((l) => [
-      ...l,
-      { roofId: roof.id, zoneId: zone.id, site: siteKey, score: roof.score, mwh_yr: roof.mwh_yr, why: roof.why, status: 'to_approach', addedAt: new Date().toISOString() },
-    ])
+  const addLeasing = () => leasingStore.set((l) => [...l, leaseItem(roof, zone, siteKey)])
 
   return (
     <aside className="card p-5 self-start xl:sticky xl:top-6" aria-labelledby="roof-title" aria-live="polite">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="label">Selected roof</div>
-          <h2 id="roof-title" className="mt-1 text-xl font-semibold num">{roof.id}</h2>
-          <p className="text-sm text-muted">{roof.owner} · roof {roof.roof_age_yrs} yrs old</p>
+          <h2 id="roof-title" className="mt-1 text-xl font-semibold num">{roof.label}</h2>
+          <p className="text-sm text-muted">{groupName(zone)} · {roof.owner} · roof {roof.roof_age_yrs} yrs old</p>
         </div>
         <div className="text-right">
           <div className="text-3xl font-semibold num">{roof.score}</div>
@@ -261,7 +255,8 @@ function RoofPanel({ data, roof, zone, siteKey }: { data: RoofsData; roof: Roof;
         <div><dt className="label">Yield</dt><dd className="num">{fmt(roof.yield_kwh_kwp)} kWh/kWp</dd></div>
         <div><dt className="label">Energy</dt><dd className="num">{fmt(roof.mwh_yr, 1)} MWh/yr</dd></div>
       </dl>
-      <p className="mt-3 text-xs text-muted">Owner notes: {roof.why.join(' · ')}</p>
+      <p className="mt-3 text-sm">{roof.headline}</p>
+      <p className="mt-1 text-xs text-muted">Owner notes: {roof.why.join(' · ')}</p>
 
       <div className="mt-5 grid gap-2">
         <button type="button" className="btn-primary" disabled={inShortlist} onClick={() => shortlistStore.set((s) => [...s, roof.id])}>

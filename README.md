@@ -16,6 +16,7 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 |---|---|
 | ![Zone view](docs/screenshots/2-zone.jpg) | ![Portfolio plan](docs/screenshots/3-portfolio-plan.jpg) |
 | ![Forecast backtest](docs/screenshots/4-forecast-backtest.jpg) | ![Firming forecast](docs/screenshots/5-firming.jpg) |
+| ![Leasing list](docs/screenshots/6-leasing.jpg) | ![Roof scoring model](docs/screenshots/7-roof-model.jpg) |
 
 ---
 
@@ -30,7 +31,9 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Zone outlines on the master plan | Hand-placed | `pipeline/data/zones.json` on the SDP master plan image |
 | Roof area, shading, roof condition, owner type, likelihood to sign | **Sample** | Generated with a fixed seed (`"sample": true` in `roofs.json`) |
 | Zone average scores | **Sample** | Roofs are calibrated so each zone's average matches `zones.json` |
-| Buyer demand (Innovation Park, 12,000 MWh/yr) | **Sample** | Example for the demo |
+| Buyers: Innovation Park (1,800 MWh/yr, office hours), Elmina Lakeside Mall (2,400 MWh/yr, mall hours) | **Sample** | Example buyers, not real contracts |
+| Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit from the good home roofs; editable |
+| Roof facing, usable panel area, sun lost to shade | **Sample** | Derived from the synthetic roof attributes |
 | Usage pattern shares (office 95%, mall 70%, 24h 45%) | Placeholder | Replace with metered load profiles |
 | Scans of other townships (Bukit Raja, Serenia City, …) | **Sample** | Deterministic simulated scan |
 | Resident app mock (lease income, panel status, street card) | Placeholder | Shown as `[X]`; its 7-day bars scale the live forecast to a 5.3 kWp home |
@@ -47,7 +50,7 @@ Site: City of Elmina, 3.1992 N, 101.5006 E (Wikipedia). The system is fixed-tilt
 - NASA POWER gives daily totals, so each day is split into hours using pvlib's clear-sky curve scaled to that day's measured sunlight.
 
 ### Forecast backtest
-The model predicts daily energy for a reference 10 MWp portfolio (about 93 factory roofs).
+The model predicts daily energy for the Innovation Park sample portfolio: 1,800 MWh/yr × 95% office-hours share + 15% buffer at 1,287 kWh/kWp/yr ≈ **1.53 MWp**. The buyer's solar share is 4.7 MWh/day. The model itself predicts kWh per kWp, so the hit rates and errors below don't depend on portfolio size.
 
 - **Training data:** archived Open-Meteo forecasts from 2017-01-02 to 2022-12-31. The archive starts in 2017, so training covers 2017–2022 rather than the 2015–2022 in the brief.
 - **Test data:** 2023-01-01 to 2025-12-31, never seen in training.
@@ -60,7 +63,7 @@ The model predicts daily energy for a reference 10 MWp portfolio (about 93 facto
 | **True day-ahead check**, 2024-01-20 → 2025-12-31 (712 days) | **86.1%** | 13.8% |
 | Baseline: monthly average, no forecast | – | 15.8% |
 
-- **Wettest week in the test period** (22–28 Nov 2025, 282 mm of rain): promising P50 every day would have left SDP **32.3 MWh short**. Promising P90 left it **0.9 MWh short**.
+- **Wettest week in the test period** (22–28 Nov 2025, 282 mm of rain): promising P50 every day would have left SDP **4.9 MWh short** on that 1.53 MWp portfolio, roughly a whole day's demand. Promising P90 left it **0.1 MWh short**.
 - **Error by weather:** sunny days 5.4%, cloudy 7.1%, rain 12.5%, storm 34.4%. The app shows trust levels from these.
 
 **Honesty notes:**
@@ -127,6 +130,7 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
 ```
 
 **Clarifications and changes:**
+- **When the selected townships can't supply `roofs_needed`**, the plan flags it. It also shows the worst-month cover the available good roofs would actually reach, and only sends those roofs to the leasing list.
 - **`avg_mwh_per_roof`** is the average annual MWh of *good* roofs (score ≥ 75) in the selected townships, weighted by how many each township has. These are the roofs SDP would actually sign.
 - **`supply[m]`** = `roofs_needed × avg_mwh_per_roof × monthly_share[m]`. Here `monthly_share` is each month's share of annual yield from the 2015–2025 simulation.
 - **`round`** uses half-up rounding, like JavaScript's `Math.round`. Python's built-in `round()` uses banker's rounding, so the Python code uses `floor(x + 0.5)`.

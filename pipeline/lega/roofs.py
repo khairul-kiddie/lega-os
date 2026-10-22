@@ -44,6 +44,35 @@ def likelihood(owner: str, condition: float, years_left: int, attended: bool) ->
     return float(np.clip(s, 0, 100)), why
 
 
+def aspect(zone_type: str, orient_loss: float) -> str:
+    """Synthetic roof facing, consistent with the orientation loss used in the yield."""
+    if zone_type in ("f", "m", "c"):
+        return "Flat (low-pitch metal deck)"
+    return "South" if orient_loss < 0.015 else "North-east" if orient_loss < 0.03 else "East" if orient_loss < 0.045 else "West"
+
+
+def headline(parts: dict, shade_loss: float, age: int, owner: str, attended: bool, years_left: int) -> str:
+    """Short plain-English reason for the leasing list, e.g. 'Top yield, no shading, roof 6 yrs old'."""
+    y = parts["yield"]
+    lead = "Top yield" if y >= 95 else "High yield" if y >= 85 else "Good yield" if y >= 70 else "Lower yield"
+    extras = []
+    if parts["condition"] < 50:
+        extras.append("roof needs repair")
+    if years_left < 8:
+        extras.append("short lease left")
+    if shade_loss < 0.5:
+        extras.append("no shading")
+    elif shade_loss < 3:
+        extras.append("light shade")
+    if age <= 8:
+        extras.append(f"roof {age} yr{'' if age == 1 else 's'} old")
+    if attended:
+        extras.append("attended solar talk")
+    if owner == "Owner-occupier":
+        extras.append("owner-occupied")
+    return ", ".join([lead, *extras[:2]])
+
+
 def make_roofs(zone: dict, defaults: dict, site_yield: float, rng: np.random.Generator) -> list[dict]:
     t = zone["type"]
     d = defaults[t]
@@ -88,17 +117,28 @@ def make_roofs(zone: dict, defaults: dict, site_yield: float, rng: np.random.Gen
 
     rows = string.ascii_uppercase
     out = []
-    for x, (parts, spec, why) in zip(roofs, scored):
+    for i, (x, (parts, spec, why)) in enumerate(zip(roofs, scored)):
         score = sum(WEIGHTS[k] * parts[k] for k in WEIGHTS)
         mwh = x["kwp"] * spec / 1000
+        shade_loss = 18 * (1 - parts["shading"] / 100)  # % of sun lost, matches the yield formula
+        if zone["id"].startswith("Precinct"):
+            n = zone["id"].split(" ")[1]
+            lot = 100 + i + 1
+            rid, label = f"P{n}-{lot}", f"Lot {lot}"
+        else:
+            rid = label = f"{zone['id'].split(' ')[0].split(',')[0]}-{rows[x['r']]}{x['c'] + 1:02d}"
         out.append({
-            "id": f"{zone['id'].split(' ')[0].split(',')[0]}-{rows[x['r']]}{x['c'] + 1:02d}",
+            "id": rid, "label": label,
             "row": x["r"], "col": x["c"],
             "score": round(score), "parts": {k: round(v) for k, v in parts.items()},
             "area_m2": round(x["area"]), "kwp": round(x["kwp"], 1),
             "yield_kwh_kwp": round(spec), "mwh_yr": round(mwh, 2),
             "owner": x["owner"], "roof_age_yrs": x["age"], "lease_years_left": x["years_left"],
             "why": why,
+            "headline": headline(parts, shade_loss, x["age"], x["owner"], x["attended"], x["years_left"]),
+            "aspect": aspect(zone["type"], x["spec_loss"]),
+            "usable_m2": round(x["kwp"] * 6.5),  # ~6.5 m² of panel area per kWp
+            "shade_loss_pct": round(shade_loss, 1),
         })
     return out
 
@@ -129,6 +169,8 @@ def run():
             roofs = make_roofs(z, zones_src["roof_defaults"], site_yield, rng)
             zones.append({**{k: z[k] for k in ("id", "type", "rows", "cols", "x1", "y1", "x2", "y2")},
                           "target_score": z["score"], "summary": summarise(z, roofs), "roofs": roofs})
+        all_ids = [r["id"] for z in zones for r in z["roofs"]]
+        assert len(all_ids) == len(set(all_ids)), f"duplicate roof ids in {site}"
         out["sites"][site] = {"image": src["image"], "frame": src["frame"], "zones": zones}
         print(site, [(z["id"], z["target_score"], z["summary"]["avg_score"], z["summary"]["good_roofs"]) for z in zones])
     (WEB_DATA / "roofs.json").write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=False))

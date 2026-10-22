@@ -22,10 +22,11 @@ HF_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 PR_URL = "https://previous-runs-api.open-meteo.com/v1/forecast"
 FC_START, TRAIN_END, CAL_YEAR, TEST_START, END = "2017-01-02", "2022-12-31", 2022, "2023-01-01", "2025-12-31"
 
-# Reference portfolio for MWh figures: ~93 factory roofs (the Innovation Park sample plan) ≈ 10 MWp.
-PORTFOLIO_KWP = 10_000
-# Sample buyer demand for charts: Innovation Park, 12,000 MWh/yr × 95% office-hours share.
-DEMAND_MWH_DAY = round(12_000 * 0.95 / 365, 1)
+# Sample buyer: Innovation Park, 1,800 MWh/yr in office hours (95% solar-coverable).
+BUYER_MWH_YR, BUYER_SHARE = 1_800, 0.95
+DEMAND_MWH_DAY = round(BUYER_MWH_YR * BUYER_SHARE / 365, 1)
+# Portfolio sized like the Balanced plan: solar need + 15% buffer at the site yield (1,287 kWh/kWp/yr) ≈ 1.53 MWp.
+PORTFOLIO_KWP = 1_530
 
 DAILY_VARS = ["shortwave_radiation_sum", "precipitation_sum", "precipitation_hours", "cloud_cover_mean",
               "temperature_2m_mean", "relative_humidity_2m_mean", "sunshine_duration"]

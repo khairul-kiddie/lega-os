@@ -1,38 +1,40 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PromiseChart from '../components/PromiseChart'
-import { PageHeader, SampleNote } from '../components/ui'
+import { PageHeader, SampleNote, Segmented } from '../components/ui'
+import { groupName } from '../lib/store'
 import { fmt, useJson } from '../lib/data'
-import type { Roof, RoofsData, ScorePart, Zone } from '../lib/data'
+import type { Roof, RoofsData, ScorePart, SiteKey, YieldData, Zone } from '../lib/data'
 import { pct, shortDate, WEATHER_LABEL, type Backtest } from '../lib/forecast'
 
 type Tab = 'roof' | 'forecast'
 
 export default function Insights() {
   const [params, setParams] = useSearchParams()
-  const tab: Tab = params.get('tab') === 'roof' ? 'roof' : 'forecast'
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'roof', label: 'Roof scoring model' },
-    { id: 'forecast', label: 'Forecast model' },
-  ]
+  const tab: Tab = params.get('tab') === 'forecast' ? 'forecast' : 'roof'
   return (
     <>
-      <PageHeader title="Model insights" subtitle="How LEGA OS ranks roofs and decides how much power SDP can safely promise." />
-      <div role="tablist" aria-label="Model" className="mb-6 inline-flex rounded-lg border border-line bg-card p-1">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            onClick={() => setParams({ tab: t.id })}
-            className={`min-h-touch rounded-md px-4 text-sm font-medium ${tab === t.id ? 'bg-primary text-white' : 'text-muted hover:text-ink'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader
+        title="Model insights"
+        subtitle={tab === 'roof' ? 'What each model looked at, and why it gave this answer · sample data' : 'How much SDP can safely promise, and how often that promise held · real weather data'}
+        right={
+          <div role="tablist" aria-label="Model" className="flex gap-2">
+            {(['roof', 'forecast'] as Tab[]).map((t) => (
+              <button
+                key={t}
+                role="tab"
+                id={`tab-${t}`}
+                aria-selected={tab === t}
+                aria-controls={`panel-${t}`}
+                onClick={() => setParams({ tab: t })}
+                className={`min-h-touch rounded-lg border px-5 text-[15px] ${tab === t ? 'border-ink bg-ink text-white' : 'border-line bg-card hover:bg-page'}`}
+              >
+                {t === 'roof' ? 'Roof scoring model' : 'Forecast model'}
+              </button>
+            ))}
+          </div>
+        }
+      />
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'forecast' ? <ForecastTab /> : <RoofTab />}
       </div>
@@ -100,10 +102,10 @@ function ForecastTab() {
           <div>
             <h2 id="promise-h" className="font-semibold">Did the forecast keep its promises?</h2>
             <p className="text-sm text-muted">
-              14 test days around the wettest week of 2023–2025, for a {fmt(b.portfolio_kwp / 1000)} MWp portfolio. Promise kept on {14 - misses} of 14 days. Click a day.
+              14 test days around the wettest week of 2023–2025, for the {fmt(b.portfolio_kwp / 1000, 2)} MWp Innovation Park portfolio. Promise kept on {14 - misses} of 14 days. Click a day.
             </p>
           </div>
-          <SampleNote>Buyer demand line is a sample (Innovation Park, 12,000 MWh/yr).</SampleNote>
+          <SampleNote>Buyer demand line is a sample (Innovation Park, 1,800 MWh/yr).</SampleNote>
         </div>
         <div className="mt-4">
           <PromiseChart days={b.sample_window} demand={b.demand_mwh_day} selected={sel} onSelect={setSel} />
@@ -199,113 +201,174 @@ function TrustPill({ t }: { t: 'High' | 'Medium' | 'Low' }) {
 
 /* ---------------- Roof scoring model ---------------- */
 
-const PART_LABEL: Record<ScorePart, string> = { yield: 'solar yield', shading: 'little shading', condition: 'roof condition', likelihood: 'owner likely to sign' }
+type Example = { id: string; label: string; r: Roof; z: Zone; site: SiteKey }
 
 function RoofTab() {
   const { data } = useJson<RoofsData>('roofs.json')
-  const examples = useMemo(() => {
+  const { data: y } = useJson<YieldData>('yield.json')
+  const examples = useMemo<Example[]>(() => {
     if (!data) return []
-    const all = data.sites.business_park.zones.flatMap((z) => z.roofs.map((r) => ({ r, z })))
-    const sorted = [...all].sort((a, b) => b.r.score - a.r.score)
+    const all = (site: SiteKey) => data.sites[site].zones.flatMap((z) => z.roofs.map((r) => ({ r, z, site })))
+    const byScore = (xs: { r: Roof }[]) => [...xs].sort((a, b) => b.r.score - a.r.score)
+    const homes = byScore(all('homes'))
+    const factories = byScore(all('business_park').filter(({ z }) => z.type === 'f' || z.type === 'm'))
+    const everything = byScore([...all('homes'), ...all('business_park')])
     return [
-      { label: 'Best roof', ...sorted[0] },
-      { label: 'Median roof', ...sorted[Math.floor(sorted.length / 2)] },
-      { label: 'Weakest roof', ...sorted[sorted.length - 1] },
-    ]
+      { id: 'home', label: 'Best home', ...homes[0] },
+      { id: 'factory', label: 'Best factory', ...factories[0] },
+      { id: 'median', label: 'Median roof', ...everything[Math.floor(everything.length / 2)] },
+      { id: 'weak', label: 'Weakest roof', ...everything[everything.length - 1] },
+    ] as Example[]
   }, [data])
-  const [i, setI] = useState(0)
-  if (!data || !examples.length) return <p className="text-muted">Loading…</p>
-  const { r, z } = examples[i]
+  const [pick, setPick] = useState('home')
+  if (!data || !y || !examples.length) return <p className="text-muted">Loading…</p>
+  const ex = examples.find((e) => e.id === pick) ?? examples[0]
+  const siteRoofs = data.sites[ex.site].zones.flatMap((z) => z.roofs)
+  const median = [...siteRoofs.map((r) => r.shade_loss_pct)].sort((a, b) => a - b)[Math.floor(siteRoofs.length / 2)]
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <div role="group" aria-label="Example roof" className="inline-flex rounded-lg border border-line bg-card p-1">
-          {examples.map((e, k) => (
-            <button key={e.label} type="button" aria-pressed={i === k} onClick={() => setI(k)}
-              className={`min-h-touch rounded-md px-3 text-sm ${i === k ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>
-              {e.label} <span className="num">({e.r.score})</span>
-            </button>
-          ))}
-        </div>
-        <SampleNote />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="flex flex-wrap items-center gap-2 text-[15px] text-muted">
+          Pipeline for <span className="font-semibold text-ink">{ex.r.label}, {groupName(ex.z)}</span> ·
+          <span className="rounded-full bg-[#DCEFE6] px-3 py-1 font-medium text-primary-dark">Final score {ex.r.score}</span>
+        </p>
+        <Segmented label="Example roof" value={pick} onChange={setPick} options={examples.map((e) => ({ id: e.id, label: e.label }))} />
       </div>
-      <RoofPipeline data={data} roof={r} zone={z} />
+      <RoofPipeline data={data} y={y} roof={ex.r} zone={ex.z} townshipMedian={median} />
     </div>
   )
 }
 
-function RoofPipeline({ data, roof, zone }: { data: RoofsData; roof: Roof; zone: Zone }) {
+const PART_LABEL: Record<ScorePart, string> = { yield: 'Solar yield', shading: 'Shading', condition: 'Roof condition', likelihood: 'Likelihood to sign' }
+
+function StepCard({ n, step, title, real, children }: { n: number; step: string; title: string; real?: boolean; children: React.ReactNode }) {
+  return (
+    <li className="card flex flex-col p-6">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-sm font-medium tracking-wide text-primary">{n} · {step}</span>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${real ? 'bg-primary/10 text-primary' : 'bg-amber-soft text-ink'}`}>{real ? 'Real data' : 'Sample'}</span>
+      </div>
+      <h3 className="mt-3 text-lg font-semibold">{title}</h3>
+      {children}
+    </li>
+  )
+}
+
+function Stats({ rows }: { rows: [string, string][] }) {
+  return (
+    <dl className="mt-auto space-y-2 border-t border-line pt-4 text-[15px]">
+      {rows.map(([k, v]) => (
+        <div key={k} className="flex justify-between gap-3"><dt>{k}</dt><dd className="num font-medium">{v}</dd></div>
+      ))}
+    </dl>
+  )
+}
+
+/** 12 hourly cells 7am–6pm; shade eats into the ends of the day first. */
+function shadeStrip(lossPct: number): ('sun' | 'part' | 'shade')[] {
+  const cells: ('sun' | 'part' | 'shade')[] = Array(12).fill('sun')
+  const affected = Math.min(10, Math.round(lossPct / 1.5))
+  for (let k = 0; k < affected; k++) {
+    const idx = k % 2 === 0 ? k / 2 : 11 - (k - 1) / 2
+    cells[idx] = k < affected - 2 ? 'shade' : 'part'
+  }
+  return cells
+}
+
+function RoofPipeline({ data, y, roof, zone, townshipMedian }: { data: RoofsData; y: YieldData; roof: Roof; zone: Zone; townshipMedian: number }) {
   const w = data.weights
-  const contrib = (Object.keys(w) as ScorePart[]).map((k) => ({ k, pts: w[k] * roof.parts[k] })).sort((a, b) => b.pts - a.pts)
-  const steps = [
-    {
-      n: 1, title: 'Detect', real: false,
-      what: 'Find the roof outline and usable area.',
-      out: [`Roof ${roof.id} in zone ${zone.id}`, `${fmt(roof.area_m2)} m² roof`, `${fmt(roof.kwp, 1)} kWp fits after setbacks`],
-      prod: 'Production: roof segmentation on satellite imagery.',
-    },
-    {
-      n: 2, title: 'Shade', real: false,
-      what: 'Estimate shading from trees and taller neighbours.',
-      out: [`Shade-free score ${roof.parts.shading}/100`, `Roof condition ${roof.parts.condition}/100 (${roof.roof_age_yrs} yrs old)`],
-      prod: 'Production: LiDAR / 3D city model + site survey.',
-    },
-    {
-      n: 3, title: 'Simulate', real: true,
-      what: 'Run pvlib on 11 years of NASA POWER weather for Elmina.',
-      out: [`Site yield ${fmt(data.site_yield_kwh_kwp)} kWh/kWp/yr`, `This roof ${fmt(roof.yield_kwh_kwp)} kWh/kWp after shading`, `${fmt(roof.mwh_yr, 1)} MWh per year`],
-      prod: 'Real: NASA POWER 2015–2025 + pvlib PVWatts.',
-    },
-    {
-      n: 4, title: 'Score', real: false,
-      what: '40% yield + 20% shading + 20% condition + 20% likelihood to sign.',
-      out: [`Score ${roof.score}/100`, `Likelihood to sign ${roof.parts.likelihood}/100`, roof.why.join(' · ')],
-      prod: 'Likelihood is rule-based on owner type, lease length and engagement.',
-    },
+  const pts = (k: ScorePart) => w[k] * roof.parts[k]
+  const monthly = y.monthly.map((m, i) => ({ m: m.month, kwh: m.kwh_per_kwp * roof.kwp, monsoon: [0, 1, 2, 10, 11].includes(i) }))
+  const maxM = Math.max(...monthly.map((m) => m.kwh))
+  const home = zone.type === 'h' || zone.type === 'a'
+  const strip = shadeStrip(roof.shade_loss_pct)
+  const cellCls = { sun: 'bg-amber', part: 'bg-[#B9C0BB]', shade: 'bg-[#6E7772]' }
+
+  const sentences = [
+    `${roof.aspect.startsWith('Flat') ? 'Large flat roof' : `${roof.aspect}-facing roof plane`} with ${roof.shade_loss_pct < 1 ? 'almost no shading' : `${fmt(roof.shade_loss_pct, 1)}% of sun lost to shade`} (township median ${fmt(townshipMedian, 1)}%).`,
+    roof.parts.condition >= 75 ? `Roof in good condition (${roof.roof_age_yrs} yrs old), so no repair is needed before install.` : `Roof condition ${roof.parts.condition}/100 (${roof.roof_age_yrs} yrs old): inspect before install.`,
+    `${roof.owner}${roof.why.includes('attended SDP solar briefing') ? ' who attended an SDP solar briefing' : ''}, ${roof.lease_years_left} years left on lease or title.`,
   ]
+  const rank = roof.score >= 75 ? 'high' : roof.score >= 55 ? 'in the middle' : 'low'
+
   return (
     <>
       <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {steps.map((s) => (
-          <li key={s.n} className="card relative p-5">
-            <div className="flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-sm font-semibold text-white">{s.n}</span>
-              <h3 className="font-semibold">{s.title}</h3>
-              <span className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-medium ${s.real ? 'bg-primary/10 text-primary' : 'bg-amber-soft text-ink'}`}>{s.real ? 'Real data' : 'Sample'}</span>
-            </div>
-            <p className="mt-2 text-sm text-muted">{s.what}</p>
-            <ul className="mt-3 space-y-1 text-sm">
-              {s.out.map((o) => <li key={o} className="num">→ {o}</li>)}
-            </ul>
-            <p className="mt-3 text-xs text-muted">{s.prod}</p>
-          </li>
-        ))}
-      </ol>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="card p-5">
-          <h2 className="font-semibold">Why this roof ranks {roof.score >= 75 ? 'high' : roof.score >= 55 ? 'in the middle' : 'low'}</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {contrib.map((c) => (
-              <li key={c.k} className="flex items-center gap-3">
-                <span className="w-40">{PART_LABEL[c.k]}</span>
-                <span className="h-2 flex-1 rounded-full bg-page"><span className="block h-2 rounded-full bg-primary" style={{ width: `${(c.pts / 40) * 100}%` }} /></span>
-                <span className="w-16 text-right num">+{c.pts.toFixed(1)} pts</span>
+        <StepCard n={1} step="DETECT" title="Find the roof">
+          <svg viewBox="0 0 340 208" className="mt-4 w-full rounded-lg" role="img" aria-label="Illustration: detected roof outline on a satellite tile">
+            <rect width="340" height="208" fill="#8E928A" />
+            <rect y="188" width="340" height="20" fill="#6F746D" />
+            {home ? (
+              <>
+                <rect x="27" y="25" width="122" height="152" fill="#A9ABA3" />
+                <rect x="172" y="20" width="132" height="162" fill="#C7C1B0" />
+                <rect x="172" y="20" width="132" height="81" fill="#D3CDBC" />
+                <rect x="172" y="20" width="132" height="162" fill="none" stroke="#E39B2E" strokeWidth="4" />
+              </>
+            ) : (
+              <>
+                <rect x="20" y="22" width="300" height="160" fill="#B9B5A8" />
+                {[0, 1, 2, 3, 4, 5].map((i) => <line key={i} x1={20 + i * 50} y1="22" x2={20 + i * 50} y2="182" stroke="#A7A396" strokeWidth="2" />)}
+                <rect x="34" y="34" width="272" height="136" fill="none" stroke="#E39B2E" strokeWidth="4" />
+              </>
+            )}
+          </svg>
+          <p className="mt-4 text-sm text-muted">Input: satellite tile + building outline. Pretrained segmentation finds the roof planes.</p>
+          <Stats rows={[['Roof area', `${fmt(roof.area_m2)} m²`], ['Usable for panels', `${fmt(roof.usable_m2)} m²`], ['Best plane faces', roof.aspect.replace(' (low-pitch metal deck)', '')]]} />
+        </StepCard>
+
+        <StepCard n={2} step="SHADE" title="Check for shading">
+          <div className="mt-4 grid grid-cols-12 gap-0.5" role="img" aria-label={`Hourly sun on panels, 7am to 6pm: ${strip.filter((c) => c === 'sun').length} of 12 hours in full sun`}>
+            {strip.map((c, i) => <span key={i} className={`h-9 ${cellCls[c]}`} />)}
+          </div>
+          <div className="mt-1 flex justify-between text-xs text-muted"><span>7am</span><span>12pm</span><span>6pm</span></div>
+          <p className="mt-3 text-sm text-muted">Input: neighbouring building heights + sun path for Elmina. Orange = full sun on panels.</p>
+          <Stats rows={[['Sun lost to shade', `${fmt(roof.shade_loss_pct, 1)}%`], ['Township median', `${fmt(townshipMedian, 1)}%`]]} />
+        </StepCard>
+
+        <StepCard n={3} step="SIMULATE" title="Simulate yield" real>
+          <div className="mt-4 flex h-36 items-end gap-1" role="img" aria-label="Monthly energy for this roof, January to December">
+            {monthly.map((m) => (
+              <span key={m.m} title={`${m.m}: ${fmt(m.kwh)} kWh`} className={`flex-1 rounded-t-sm ${m.monsoon ? 'bg-primary-light' : 'bg-primary'}`} style={{ height: `${(m.kwh / maxM) * 100}%` }} />
+            ))}
+          </div>
+          <div className="mt-1 flex justify-between text-xs text-muted"><span>Jan</span><span>Jun</span><span>Dec</span></div>
+          <p className="mt-3 text-sm text-muted">pvlib physics model on 11 years of NASA POWER sunlight data. Lighter bars = monsoon months.</p>
+          <Stats rows={[['System size', `${fmt(roof.kwp, 1)} kWp`], ['Yield per year', `${fmt(roof.mwh_yr, 1)} MWh`]]} />
+        </StepCard>
+
+        <StepCard n={4} step="SCORE" title="Combine into a score">
+          <ul className="mt-4 space-y-3">
+            {(Object.keys(w) as ScorePart[]).map((k) => (
+              <li key={k}>
+                <div className="flex justify-between text-[15px]"><span>{PART_LABEL[k]} ({w[k] * 100})</span><span className="num font-medium">{Math.round(pts(k))} pts</span></div>
+                <div className="mt-1 h-2 rounded-full bg-page"><div className="h-2 rounded-full bg-primary" style={{ width: `${roof.parts[k]}%` }} /></div>
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-sm">
-            Biggest contributor: {PART_LABEL[contrib[0].k]}. Weakest: {PART_LABEL[contrib[contrib.length - 1].k]} — {roof.parts[contrib[contrib.length - 1].k] < 60 ? 'worth fixing before approaching the owner.' : 'still acceptable.'}
+          <p className="mt-3 text-sm text-muted">Bar = points earned out of each factor’s weight.</p>
+          <div className="mt-auto flex items-baseline justify-between border-t border-line pt-4">
+            <span className="font-semibold">Total</span>
+            <span className="num text-3xl font-medium">{roof.score} / 100</span>
+          </div>
+        </StepCard>
+      </ol>
+
+      <section className="card grid gap-8 p-6 lg:grid-cols-2">
+        <div>
+          <h2 className="text-lg font-semibold">Why this roof ranks {rank}</h2>
+          <p className="mt-2 text-[15px] leading-relaxed">{sentences.join(' ')}</p>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Model confidence</h2>
+          <p className="mt-2 text-[15px] leading-relaxed">
+            Detection will be checked against [X] hand-labelled Elmina roofs: [XX]% match. Yield is checked against the 1,100–1,500 kWh/kWp
+            range typical for Peninsular Malaysia rooftops ({fmt(data.site_yield_kwh_kwp)} passes). Roof size, shading and condition are sample
+            data; likelihood to sign is rule-based until SDP shares lease data.
           </p>
-        </section>
-        <section className="card p-5">
-          <h2 className="font-semibold">Model confidence</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li><span className="font-medium text-primary">High —</span> site yield. Simulated from 11 years of satellite weather; annual yield {fmt(data.site_yield_kwh_kwp)} kWh/kWp sits inside the 1,100–1,500 range typical for Peninsular Malaysia rooftops.</li>
-            <li><span className="font-medium text-ink">Low (sample) —</span> roof area, shading and condition. Generated with a fixed seed until imagery and site surveys are in.</li>
-            <li><span className="font-medium text-ink">Low (sample) —</span> likelihood to sign. Rules are a starting point; they should be re-fitted on real outreach outcomes from the leasing list.</li>
-          </ul>
-        </section>
-      </div>
+        </div>
+      </section>
     </>
   )
 }

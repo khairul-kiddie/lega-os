@@ -13,13 +13,14 @@ import {
   portfolioStore,
   requirement,
   SAFETY_INFO,
+  STATUS_LABEL,
   simulateScan,
   TOWNSHIPS,
   townshipStats,
   type Plan,
   type Portfolio as P,
 } from '../lib/portfolio'
-import { leasingStore, shortlistStore, useStore, type LeaseItem } from '../lib/store'
+import { leaseItem, leasingStore, shortlistStore, useStore, type LeaseItem } from '../lib/store'
 
 export default function Portfolio() {
   return (
@@ -62,9 +63,9 @@ function Stepper({ step }: { step: number }) {
 }
 
 const STATUS_CLS: Record<P['status'], string> = {
-  Draft: 'bg-page text-muted border border-line',
-  'Plan ready': 'bg-primary/10 text-primary',
-  'Sent to leasing': 'bg-amber-soft text-ink',
+  Draft: 'bg-page text-muted',
+  'Plan ready': 'bg-amber-soft text-ink',
+  'Sent to leasing': 'bg-primary/10 text-primary',
 }
 
 function List() {
@@ -82,40 +83,43 @@ function List() {
   return (
     <>
       <PageHeader
-        title="Portfolio builder"
-        subtitle="Match a buyer's demand to a group of roofs, sized with real Elmina solar yield and a buffer for owners who drop out."
-        right={<button type="button" className="btn-primary" onClick={create}>+ New portfolio</button>}
+        title="Portfolios"
+        subtitle="One portfolio = one buyer and the group of roofs that supplies them · sample data"
+        right={<button type="button" className="btn-primary !text-base" onClick={create}>+ New portfolio</button>}
       />
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[15px]">
           <caption className="sr-only">Saved portfolios</caption>
-          <thead className="border-b border-line text-left">
-            <tr className="label">
-              <th scope="col" className="px-4 py-3 font-medium">Buyer</th>
-              <th scope="col" className="px-4 py-3 font-medium text-right">Required</th>
-              <th scope="col" className="px-4 py-3 font-medium">Usage pattern</th>
-              <th scope="col" className="px-4 py-3 font-medium text-right">Roofs needed</th>
-              <th scope="col" className="px-4 py-3 font-medium">Status</th>
-              <th scope="col" className="px-4 py-3"><span className="sr-only">Actions</span></th>
+          <thead className="border-b border-line text-left text-sm text-muted">
+            <tr>
+              <th scope="col" className="px-6 py-4 font-medium">Buyer</th>
+              <th scope="col" className="px-4 py-4 font-medium">Required</th>
+              <th scope="col" className="px-4 py-4 font-medium">Uses power</th>
+              <th scope="col" className="px-4 py-4 font-medium">Roofs needed</th>
+              <th scope="col" className="px-4 py-4 font-medium">Status</th>
+              <th scope="col" className="px-6 py-4"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             {all.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted">No portfolios yet. Start with “+ New portfolio”.</td></tr>
+              <tr><td colSpan={6} className="px-6 py-10 text-center text-muted">No portfolios yet. Start with “+ New portfolio”.</td></tr>
             )}
             {all.map((p) => {
               const plan = data && y && p.demand > 0 ? buildPlan(p, data, y) : null
               return (
                 <tr key={p.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 font-medium">{p.buyer || <span className="text-muted">Untitled buyer</span>}<div className="text-xs font-normal text-muted">{p.location}</div></td>
-                  <td className="px-4 py-3 text-right num">{p.demand > 0 ? `${fmt(requirement(p).needYr)} MWh/yr` : '—'}</td>
-                  <td className="px-4 py-3">{PATTERN_INFO[p.pattern].label}</td>
-                  <td className="px-4 py-3 text-right num">{plan ? fmt(plan.roofsNeeded) : '—'}</td>
-                  <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_CLS[p.status]}`}>{p.status}</span></td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-4">
+                    <span className="font-semibold">{p.buyer || <span className="text-muted">Untitled buyer</span>}</span>
+                    <div className="text-sm text-muted">{p.location}</div>
+                  </td>
+                  <td className="px-4 py-4 num">{p.demand > 0 ? `${fmt(requirement(p).needYr)} MWh/yr` : '—'}</td>
+                  <td className="px-4 py-4">{PATTERN_INFO[p.pattern].label}</td>
+                  <td className="px-4 py-4 num">{plan ? fmt(plan.roofsNeeded) : '—'}</td>
+                  <td className="px-4 py-4"><span className={`rounded-full px-3 py-1 text-sm font-medium ${STATUS_CLS[p.status]}`}>{STATUS_LABEL[p.status]}</span></td>
+                  <td className="px-6 py-4">
                     <div className="flex justify-end gap-2">
                       <Link className="btn-ghost" to={`/portfolio/${p.id}/details`}>Edit details</Link>
-                      <Link className="btn-primary" to={`/portfolio/${p.id}/${p.demand > 0 ? 'plan' : 'details'}`}>Open plan</Link>
+                      <Link className="btn-dark" to={`/portfolio/${p.id}/${p.demand > 0 ? 'plan' : 'details'}`}>Open plan</Link>
                     </div>
                   </td>
                 </tr>
@@ -124,7 +128,7 @@ function List() {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-muted">Saved in this browser only.</p>
+      <p className="mt-3 text-xs text-muted">Saved in this browser only. Sample buyers, not real contracts.</p>
     </>
   )
 }
@@ -178,7 +182,7 @@ function Details() {
           <label htmlFor="demand" className="text-sm font-medium">Electricity demand</label>
           <div className="mt-1 flex gap-2">
             <input id="demand" inputMode="decimal" className="input max-w-xs num" value={demand} onChange={(e) => setDemand(e.target.value)}
-              placeholder="e.g. 12000" aria-invalid={tried && !!errors.demand} aria-describedby="demand-err" />
+              placeholder="e.g. 1800" aria-invalid={tried && !!errors.demand} aria-describedby="demand-err" />
             <div role="group" aria-label="Demand unit" className="inline-flex rounded-lg border border-line p-1">
               {(['year', 'month'] as Unit[]).map((u) => (
                 <button key={u} type="button" aria-pressed={unit === u} onClick={() => setUnit(u)}
@@ -320,25 +324,26 @@ function PlanStep() {
     if (!plan) return
     const have = new Set(leasing.map((l) => l.roofId))
     const items: LeaseItem[] = []
-    const now = new Date().toISOString()
     for (const a of plan.allocation) {
       if (a.township.site) {
-        const zones = data.sites[a.township.site].zones
-        const good = zones
+        const site = a.township.site
+        const good = data.sites[site].zones
           .flatMap((z) => z.roofs.map((r) => ({ r, z })))
           .filter(({ r }) => r.score >= GOOD_SCORE)
           // hand-picked roofs from the map go first, then best score
           .sort((x, y2) => Number(shortlist.includes(y2.r.id)) - Number(shortlist.includes(x.r.id)) || y2.r.score - x.r.score)
           .slice(0, a.roofs)
-        for (const { r, z } of good)
-          if (!have.has(r.id))
-            items.push({ roofId: r.id, zoneId: z.id, site: a.township.site, score: r.score, mwh_yr: r.mwh_yr, why: r.why, status: 'to_approach', addedAt: now, portfolioId: p.id })
+        for (const { r, z } of good) if (!have.has(r.id)) items.push(leaseItem(r, z, site, p.id))
       } else {
         const prefix = a.township.id.slice(0, 3).toUpperCase()
         for (let i = 0; i < a.roofs; i++) {
           const id = `${prefix}-${String(i + 1).padStart(3, '0')}`
           if (!have.has(id))
-            items.push({ roofId: id, zoneId: a.township.name, site: a.township.id, score: 92 - Math.floor((i * 17) / Math.max(a.roofs, 1)), mwh_yr: a.stats.avgMwh, why: ['simulated scan — owner details pending'], status: 'to_approach', addedAt: now, portfolioId: p.id })
+            items.push({
+              roofId: id, label: id, group: `${a.township.name} (simulated)`, site: a.township.id,
+              score: 92 - Math.floor((i * 17) / Math.max(a.roofs, 1)), mwh_yr: a.stats.avgMwh,
+              headline: 'Simulated scan — owner details pending', status: 'to_approach', addedAt: new Date().toISOString(), portfolioId: p.id,
+            })
         }
       }
     }
@@ -423,6 +428,9 @@ function PlanStep() {
 
 function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldData; onSend: () => void; sent: number | null }) {
   const towns = plan.allocation.filter((a) => a.roofs > 0)
+  const sendable = plan.allocation.reduce((a, x) => a + x.roofs, 0)
+  // if the townships can't supply roofsNeeded, show what the available good roofs would actually cover
+  const availableWorst = plan.enough ? null : Math.min(...plan.covers) * (plan.goodAvailable / plan.roofsNeeded)
   const where = towns.map((a) => a.township.name).join(' and ')
   const dropPct = Math.round(plan.dropoutCover * 100)
   const checks = [
@@ -484,7 +492,12 @@ function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldDat
       </ul>
 
       <h3 className="mt-6 text-sm font-semibold">Monthly cover of the solar share</h3>
-      <p className="text-xs text-muted">From the 2015–2025 average monthly yield (NASA POWER + pvlib).</p>
+      <p className="text-xs text-muted">From the 2015–2025 average monthly yield (NASA POWER + pvlib), assuming all {fmt(plan.roofsNeeded)} roofs are signed.</p>
+      {availableWorst !== null && (
+        <p className="mt-2 rounded-lg border border-warn/40 bg-[#F6E1D8] px-3 py-2 text-sm text-warn">
+          With only the {fmt(plan.goodAvailable)} good roofs available, the worst month would cover {Math.round(availableWorst * 100)}% of the solar share.
+        </p>
+      )}
       <ul className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
         {plan.covers.map((c, i) => {
           const pct = Math.round(c * 100)
@@ -499,7 +512,7 @@ function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldDat
       </ul>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <button type="button" className="btn-primary" onClick={onSend}>Send {fmt(plan.roofsNeeded)} roofs to leasing list</button>
+        <button type="button" className="btn-primary" onClick={onSend}>Send {fmt(sendable)} roofs to leasing list</button>
         {sent !== null && (
           <p className="text-sm" role="status">
             Added {sent} new roofs. <Link to="/leasing" className="text-primary underline underline-offset-2">Open leasing list</Link>

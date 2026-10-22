@@ -10,7 +10,7 @@ function tint(score: number) {
 function badge(score: number) {
   if (score >= 80) return 'bg-primary text-white'
   if (score >= 70) return 'bg-amber text-ink'
-  return 'bg-ink text-white'
+  return 'bg-white text-ink ring-1 ring-ink/60'
 }
 
 export default function SiteMap({ site, onSelect, highlight }: { site: Site; onSelect: (z: Zone) => void; highlight?: string | null }) {
@@ -36,7 +36,7 @@ export default function SiteMap({ site, onSelect, highlight }: { site: Site; onS
             height: `${((z.y2 - z.y1) / h) * 100}%`,
           }}
         >
-          <span className={`absolute right-0.5 top-0.5 rounded px-1 text-[10px] font-semibold num leading-4 ${badge(z.summary.avg_score)}`}>
+          <span className={`absolute right-0.5 top-0.5 rounded px-1 text-[11px] font-semibold num leading-4 md:text-xs md:leading-5 md:px-1.5 ${badge(z.summary.avg_score)}`}>
             {Math.round(z.summary.avg_score)}
           </span>
         </button>

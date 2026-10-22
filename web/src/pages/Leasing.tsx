@@ -1,21 +1,40 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PageHeader, SampleNote } from '../components/ui'
+import { PageHeader } from '../components/ui'
 import { fmt, loadJson } from '../lib/data'
 import type { RoofsData, YieldData } from '../lib/data'
-import { buildPlan, portfolioStore } from '../lib/portfolio'
-import { leasingStore, useStore, type LeaseItem, type LeaseStatus } from '../lib/store'
+import { buildPlan, portfolioStore, SAMPLE_PORTFOLIO_ID } from '../lib/portfolio'
+import { leaseItem, leasingStore, useStore, type LeaseItem, type LeaseStatus } from '../lib/store'
 
-const STATUS: { id: LeaseStatus; label: string; cls: string; next: string }[] = [
-  { id: 'to_approach', label: 'To approach', cls: 'bg-page text-ink border border-line', next: 'Send intro letter + book a roof visit' },
-  { id: 'visited', label: 'Visited', cls: 'bg-[#E4EEF4] text-[#1D4E6B]', next: 'Share savings estimate and lease terms' },
-  { id: 'interested', label: 'Interested', cls: 'bg-amber-soft text-ink', next: 'Structural check, then draft lease' },
-  { id: 'signed', label: 'Signed', cls: 'bg-primary text-white', next: 'Schedule installation' },
-  { id: 'declined', label: 'Declined', cls: 'bg-[#F6E1D8] text-warn', next: 'Log reason; revisit in 12 months' },
+const STATUS: { id: LeaseStatus; label: string; cls: string }[] = [
+  { id: 'to_approach', label: 'To approach', cls: 'bg-page text-ink' },
+  { id: 'visited', label: 'Visited', cls: 'bg-amber-soft text-[#7A4A06]' },
+  { id: 'interested', label: 'Interested', cls: 'bg-primary/10 text-primary' },
+  { id: 'signed', label: 'Signed', cls: 'bg-primary text-white' },
+  { id: 'declined', label: 'Declined', cls: 'bg-[#F6E1D8] text-warn' },
 ]
-const S = Object.fromEntries(STATUS.map((s) => [s.id, s])) as Record<LeaseStatus, (typeof STATUS)[number]>
+const LABEL = Object.fromEntries(STATUS.map((s) => [s.id, s])) as Record<LeaseStatus, (typeof STATUS)[number]>
+const FILTERS: { id: LeaseStatus | 'all'; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'to_approach', label: 'To approach' },
+  { id: 'visited', label: 'Visited' },
+  { id: 'interested', label: 'Interested' },
+  { id: 'signed', label: 'Signed' },
+  { id: 'declined', label: 'Declined' },
+]
 
-const priority = (score: number) => (score >= 85 ? 'High' : score >= 75 ? 'Medium' : 'Low')
+function nextStep(r: LeaseItem): string {
+  const home = r.label.startsWith('Lot')
+  switch (r.status) {
+    case 'to_approach': return home ? 'Door visit' : 'Book a site visit'
+    case 'visited': return 'Follow up within a week'
+    case 'interested': return 'Send lease offer'
+    case 'signed': return 'Schedule install survey'
+    case 'declined': return 'Re-try in 6 months'
+  }
+}
+
+const SEEDED_KEY = 'lega.leasing.seeded.v2'
 
 export default function Leasing() {
   const items = useStore(leasingStore)
@@ -23,7 +42,19 @@ export default function Leasing() {
   const [filter, setFilter] = useState<LeaseStatus | 'all'>('all')
   const [target, setTarget] = useState<number | null>(null)
 
-  // roofs needed = sum of plans sent to leasing (computed lazily from data files)
+  // First visit: show the sample Innovation Park pipeline. "Clear list" is respected afterwards.
+  useEffect(() => {
+    let seeded = false
+    try {
+      seeded = localStorage.getItem(SEEDED_KEY) === '1'
+      localStorage.setItem(SEEDED_KEY, '1')
+    } catch {
+      /* storage unavailable: seed every visit */
+    }
+    if (!seeded && leasingStore.get().length === 0) loadSample()
+  }, [])
+
+  // roofs needed = sum of the plans sent to leasing
   useEffect(() => {
     let live = true
     const sent = portfolios.filter((p) => p.status === 'Sent to leasing')
@@ -36,14 +67,22 @@ export default function Leasing() {
   }, [portfolios])
 
   const counts = Object.fromEntries(STATUS.map((s) => [s.id, items.filter((i) => i.status === s.id).length])) as Record<LeaseStatus, number>
-  const signed = counts.signed
   const needed = target ?? items.length
-  const rows = [...items].filter((i) => filter === 'all' || i.status === filter).sort((a, b) => b.score - a.score)
+  const ranked = [...items].sort((a, b) => b.score - a.score)
+  const rows = ranked.map((r, i) => ({ r, rank: i + 1 })).filter(({ r }) => filter === 'all' || r.status === filter)
   const setStatus = (id: string, status: LeaseStatus) => leasingStore.set((l) => l.map((x) => (x.roofId === id ? { ...x, status } : x)))
+  const sentNames = portfolios.filter((p) => p.status === 'Sent to leasing').map((p) => p.buyer)
+  const allHomes = items.length > 0 && items.every((i) => i.label.startsWith('Lot'))
+  const subtitle = `${allHomes ? 'Homes' : 'Roofs'} to approach${sentNames.length === 1 ? ` for the ${sentNames[0]} portfolio` : ''}, best first · sample data`
+  const pct = (n: number) => `${Math.min(100, (n / Math.max(needed, 1)) * 100)}%`
 
   return (
     <>
-      <PageHeader title="Leasing list" subtitle="Every roof SDP plans to lease, ranked, with the next step for the outreach team." right={<SampleNote>Owner details are sample data.</SampleNote>} />
+      <PageHeader
+        title="Leasing list"
+        subtitle={subtitle}
+        right={items.length > 0 && <button type="button" className="btn-ghost !text-base" onClick={() => exportCsv(ranked)}>Export for field team</button>}
+      />
 
       {items.length === 0 ? (
         <div className="card p-10 text-center">
@@ -57,58 +96,74 @@ export default function Leasing() {
         </div>
       ) : (
         <>
-          <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <ul className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {STATUS.map((s) => (
-              <li key={s.id} className="card p-4">
-                <div className="label">{s.label}</div>
-                <div className="mt-1 text-2xl font-semibold num">{counts[s.id]}</div>
+              <li key={s.id} className="card px-6 py-5">
+                <div className="text-sm text-muted">{s.label}</div>
+                <div className="mt-2 text-[28px] font-medium leading-none num">{counts[s.id]}</div>
               </li>
             ))}
           </ul>
 
-          <section className="card mb-6 p-4" aria-labelledby="prog-h">
-            <div className="flex flex-wrap justify-between gap-2 text-sm">
-              <h2 id="prog-h" className="font-semibold">Progress toward roofs needed</h2>
-              <span className="num">{signed} signed of {fmt(needed)} {target ? 'needed by plans sent to leasing' : 'on the list'}</span>
+          <div className="mb-6">
+            <div className="flex h-3 overflow-hidden rounded-full bg-line/70" role="progressbar" aria-label="Roofs signed" aria-valuemin={0} aria-valuemax={needed} aria-valuenow={counts.signed}>
+              <div className="bg-primary" style={{ width: pct(counts.signed) }} />
+              <div className="bg-primary-light" style={{ width: pct(counts.interested) }} />
             </div>
-            <div className="mt-2 flex h-3 overflow-hidden rounded-full bg-page" role="progressbar" aria-valuemin={0} aria-valuemax={needed} aria-valuenow={signed} aria-label="Roofs signed">
-              <div className="bg-primary" style={{ width: `${Math.min(100, (signed / Math.max(needed, 1)) * 100)}%` }} />
-              <div className="bg-amber" style={{ width: `${Math.min(100, (counts.interested / Math.max(needed, 1)) * 100)}%` }} />
+            <p className="mt-2 text-[15px] text-muted">
+              <span className="num">{counts.signed}</span> signed + <span className="num">{counts.interested}</span> interested of{' '}
+              <span className="num">{fmt(needed)}</span> roofs needed{target ? '' : ' (roofs on the list)'}
+            </p>
+          </div>
+
+          <section className="card p-6">
+            <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+              {FILTERS.map((c) => (
+                <button key={c.id} type="button" aria-pressed={filter === c.id} onClick={() => setFilter(c.id)}
+                  className={`min-h-touch rounded-full border px-5 text-[15px] ${filter === c.id ? 'border-ink bg-ink text-white' : 'border-line bg-card hover:bg-page'}`}>
+                  {c.label}
+                </button>
+              ))}
             </div>
-            <p className="mt-1 text-xs text-muted"><span className="inline-block h-2 w-2 rounded-full bg-primary" /> signed · <span className="inline-block h-2 w-2 rounded-full bg-amber" /> interested</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[15px]">
+                <caption className="sr-only">Roofs on the leasing list, best first</caption>
+                <thead className="border-b border-line text-left text-sm text-muted">
+                  <tr>
+                    <th scope="col" className="px-2 py-3 font-medium">Priority</th>
+                    <th scope="col" className="px-2 py-3 font-medium">{allHomes ? 'Home' : 'Roof'}</th>
+                    <th scope="col" className="px-2 py-3 font-medium">Score</th>
+                    <th scope="col" className="px-2 py-3 font-medium">Why it ranks here</th>
+                    <th scope="col" className="px-2 py-3 font-medium">Status</th>
+                    <th scope="col" className="px-2 py-3 font-medium">Next step</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(({ r, rank }) => (
+                    <tr key={r.roofId} className="border-b border-line last:border-0">
+                      <td className="px-2 py-3 num">{rank}</td>
+                      <td className="px-2 py-3">
+                        <span className="font-semibold">{r.label}</span>
+                        <div className="text-sm text-muted">{r.group}</div>
+                      </td>
+                      <td className="px-2 py-3 num">{r.score}</td>
+                      <td className="px-2 py-3">{r.headline}</td>
+                      <td className="px-2 py-3">
+                        <label className="sr-only" htmlFor={`st-${r.roofId}`}>Status for {r.label}, {r.group}</label>
+                        <select id={`st-${r.roofId}`} value={r.status} onChange={(e) => setStatus(r.roofId, e.target.value as LeaseStatus)}
+                          className={`min-h-[36px] cursor-pointer appearance-none rounded-full border-0 px-3 text-sm font-semibold ${LABEL[r.status].cls}`}>
+                          {STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-2 py-3">{nextStep(r)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
-
-          <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Filter by status">
-            {[{ id: 'all' as const, label: `All (${items.length})` }, ...STATUS.map((s) => ({ id: s.id, label: `${s.label} (${counts[s.id]})` }))].map((c) => (
-              <button key={c.id} type="button" aria-pressed={filter === c.id} onClick={() => setFilter(c.id)}
-                className={`min-h-touch rounded-full border px-4 text-sm ${filter === c.id ? 'border-ink bg-ink text-white' : 'border-line bg-card hover:bg-page'}`}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="card overflow-x-auto">
-            <table className="w-full text-sm">
-              <caption className="sr-only">Roofs on the leasing list</caption>
-              <thead className="border-b border-line text-left">
-                <tr className="label">
-                  <th scope="col" className="px-4 py-3 font-medium">Priority</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Roof</th>
-                  <th scope="col" className="px-4 py-3 font-medium text-right">Score</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Why it ranks here</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Status</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Next step</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <Row key={r.roofId} r={r} onStatus={setStatus} />
-                ))}
-              </tbody>
-            </table>
-          </div>
           <div className="mt-3 flex justify-between text-xs text-muted">
-            <span>Saved in this browser only.</span>
+            <span>Saved in this browser only. Status pills are editable.</span>
             <button type="button" className="min-h-touch underline underline-offset-2" onClick={() => leasingStore.set([])}>Clear list</button>
           </div>
         </>
@@ -117,37 +172,32 @@ export default function Leasing() {
   )
 }
 
-function Row({ r, onStatus }: { r: LeaseItem; onStatus: (id: string, s: LeaseStatus) => void }) {
-  const p = priority(r.score)
-  return (
-    <tr className="border-b border-line last:border-0 align-top">
-      <td className="px-4 py-3">
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${p === 'High' ? 'bg-primary/10 text-primary' : p === 'Medium' ? 'bg-amber-soft text-ink' : 'bg-page text-muted'}`}>{p}</span>
-      </td>
-      <td className="px-4 py-3">
-        <span className="font-medium num">{r.roofId}</span>
-        <div className="text-xs text-muted">{r.site === 'business_park' ? `Zone ${r.zoneId}` : r.zoneId} · {fmt(r.mwh_yr, 1)} MWh/yr</div>
-      </td>
-      <td className="px-4 py-3 text-right num font-semibold">{r.score}</td>
-      <td className="px-4 py-3 text-xs text-muted max-w-xs">{r.why.join(' · ')}</td>
-      <td className="px-4 py-3">
-        <label className="sr-only" htmlFor={`st-${r.roofId}`}>Status for {r.roofId}</label>
-        <select id={`st-${r.roofId}`} value={r.status} onChange={(e) => onStatus(r.roofId, e.target.value as LeaseStatus)}
-          className={`min-h-touch rounded-full px-3 text-xs font-semibold ${S[r.status].cls}`}>
-          {STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
-      </td>
-      <td className="px-4 py-3 text-sm">{S[r.status].next}</td>
-    </tr>
-  )
+function exportCsv(rows: LeaseItem[]) {
+  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+  const lines = [
+    ['Priority', 'Roof', 'Area', 'Score', 'Why it ranks here', 'Status', 'Next step', 'MWh per year'],
+    ...rows.map((r, i) => [i + 1, r.label, r.group, r.score, r.headline, LABEL[r.status].label, nextStep(r), r.mwh_yr]),
+  ].map((l) => l.map(esc).join(','))
+  const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `lega-leasing-list-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
+/** Sample pipeline: the good home roofs for the Innovation Park sample portfolio, with mixed outreach status. */
 async function loadSample() {
   const d = await loadJson<RoofsData>('roofs.json')
-  const roofs = d.sites.business_park.zones.flatMap((z) => z.roofs.map((r) => ({ r, z }))).sort((a, b) => b.r.score - a.r.score).slice(0, 24)
-  const cycle: LeaseStatus[] = ['signed', 'signed', 'interested', 'visited', 'to_approach', 'interested', 'to_approach', 'declined', 'to_approach', 'visited', 'to_approach', 'to_approach']
-  leasingStore.set(roofs.map(({ r, z }, i) => ({
-    roofId: r.id, zoneId: z.id, site: 'business_park', score: r.score, mwh_yr: r.mwh_yr, why: r.why,
-    status: cycle[i % cycle.length], addedAt: new Date().toISOString(),
-  })))
+  const roofs = d.sites.homes.zones
+    .flatMap((z) => z.roofs.map((r) => ({ r, z })))
+    .filter(({ r }) => r.score >= 75)
+    .sort((a, b) => b.r.score - a.r.score)
+  // deterministic mix: best roofs were approached first, so more of them have progressed
+  const status = (i: number): LeaseStatus => {
+    const h = (i * 2654435761) % 100
+    if (i < 70) return h < 40 ? 'signed' : h < 62 ? 'interested' : h < 80 ? 'visited' : h < 90 ? 'declined' : 'to_approach'
+    return h < 10 ? 'visited' : 'to_approach'
+  }
+  leasingStore.set(roofs.map(({ r, z }, i) => leaseItem(r, z, 'homes', SAMPLE_PORTFOLIO_ID, status(i))))
 }

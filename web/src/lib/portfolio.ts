@@ -33,7 +33,7 @@ export const TOWNSHIPS: Township[] = [
   { id: 'nilai', name: 'Nilai Impian', site: null },
 ]
 
-export const BUYER_LOCATIONS = ['City of Elmina', 'Bandar Bukit Raja', 'Serenia City', 'Bandar Ainsdale', 'Nilai Impian', 'Other']
+export const BUYER_LOCATIONS = ['City of Elmina, Selangor', 'Bandar Bukit Raja, Selangor', 'Serenia City, Selangor', 'Bandar Ainsdale, Negeri Sembilan', 'Nilai Impian, Negeri Sembilan', 'Other']
 
 export const PATTERN_INFO: Record<Pattern, { label: string; hours: string; note: string }> = {
   office: { label: 'Office hours', hours: '8am – 6pm, weekdays', note: 'Demand peaks while the sun is up.' },
@@ -68,27 +68,29 @@ export interface Portfolio {
   createdAt: string
 }
 
-const SAMPLE: Portfolio = {
-  id: 'sample-mall',
-  buyer: 'Elmina Lakeside Mall (sample)',
-  location: 'City of Elmina',
-  demand: 6000,
-  unit: 'year',
-  pattern: 'mall',
-  townships: ['elmina-bp'],
-  safety: 'balanced',
-  scans: {},
-  status: 'Plan ready',
-  createdAt: '2026-10-20T09:00:00.000Z',
-}
+export const SAMPLE_PORTFOLIO_ID = 'sample-innovation-park'
 
-export const portfolioStore = createStore<Portfolio[]>('lega.portfolios.v1', [SAMPLE])
+// Sample buyers (not real contracts). Innovation Park matches the firming forecast's sample demand.
+const SAMPLES: Portfolio[] = [
+  {
+    id: SAMPLE_PORTFOLIO_ID, buyer: 'Innovation Park, Elmina', location: 'City of Elmina, Selangor', demand: 1800, unit: 'year',
+    pattern: 'office', townships: ['elmina-homes'], safety: 'balanced', scans: {}, status: 'Sent to leasing', createdAt: '2026-10-20T09:00:00.000Z',
+  },
+  {
+    id: 'sample-lakeside-mall', buyer: 'Elmina Lakeside Mall', location: 'City of Elmina, Selangor', demand: 2400, unit: 'year',
+    pattern: 'mall', townships: ['elmina-homes'], safety: 'balanced', scans: {}, status: 'Draft', createdAt: '2026-10-20T09:05:00.000Z',
+  },
+]
+
+export const STATUS_LABEL: Record<Portfolio['status'], string> = { Draft: 'Draft', 'Plan ready': 'Plan ready', 'Sent to leasing': 'Leasing' }
+
+export const portfolioStore = createStore<Portfolio[]>('lega.portfolios.v2', SAMPLES)
 
 export function newPortfolio(): Portfolio {
   return {
     id: `p-${Date.now().toString(36)}`,
     buyer: '',
-    location: 'City of Elmina',
+    location: BUYER_LOCATIONS[0],
     demand: 0,
     unit: 'year',
     pattern: 'office',

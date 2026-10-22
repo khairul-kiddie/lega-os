@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { PageHeader, SampleNote } from '../components/ui'
-import { fmt, useJson } from '../lib/data'
+import { PageHeader, Segmented } from '../components/ui'
+import { fmt, niceTicks, useJson } from '../lib/data'
 import { pct, shortDate, type Backtest } from '../lib/forecast'
 
 interface LiveDay {
@@ -29,220 +28,299 @@ interface Live {
   days_15_30_typical: { from: string; to: string; p50: number; p90: number; basis: string }
 }
 
-const weekday = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short' })
+type Mode = 'p90' | 'p50'
 
-function action(gap: number, demand: number) {
-  if (gap >= 0) return { text: `Offer ${fmt(gap, 1)} MWh surplus to other buyers`, tone: 'good' as const }
-  if (-gap <= demand * 0.15) return { text: `Top up ${fmt(-gap, 1)} MWh from the grid`, tone: 'warn' as const }
-  return { text: `Book ${fmt(-gap, 1)} MWh firming reserve (battery or grid contract)`, tone: 'bad' as const }
+const weekday = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short' })
+const dayNum = (iso: string) => new Date(`${iso}T00:00:00`).getDate()
+const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
+
+function weatherPhrase(d: LiveDay) {
+  if (d.rain_mm >= 20) return `Heavy rain expected (${fmt(d.rain_mm)} mm).`
+  if (d.rain_mm >= 5) return `Showers expected (${fmt(d.rain_mm)} mm).`
+  if (d.cloud_pct >= 80) return 'Mostly cloudy.'
+  return 'Mostly sunny.'
+}
+
+function dailyAction(gap: number, demand: number) {
+  if (gap >= 0) return `Surplus of ${fmt(gap, 1)} MWh: offer it to other buyers.`
+  if (-gap <= demand * 0.15) return `Gap of ${fmt(-gap, 1)} MWh: top up from the grid.`
+  return `Gap of ${fmt(-gap, 1)} MWh: book a firming reserve (battery or grid contract).`
 }
 
 export default function Firming() {
   const { data: live, error } = useJson<Live>('forecast_live.json')
   const { data: bt } = useJson<Backtest>('forecast_backtest.json')
-  const [mode, setMode] = useState<'p90' | 'p50'>('p90')
+  const [mode, setMode] = useState<Mode>('p90')
 
   return (
     <>
       <PageHeader
         title="Firming forecast"
-        subtitle="How much power SDP can safely promise each buyer over the next two weeks, and what to do about any gap."
-        right={<span className="rounded-full bg-amber px-3 py-1 text-xs font-semibold text-ink">Roadmap · live numbers</span>}
+        subtitle="How much SDP can safely promise Innovation Park · roadmap feature, live weather forecast, sample buyer"
+        right={
+          <Segmented
+            label="Promise level"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { id: 'p90', label: 'Promise P90 (safe)' },
+              { id: 'p50', label: 'Promise P50 (average)' },
+            ]}
+          />
+        }
       />
       {error && <p className="text-warn">Could not load the live forecast: {error}</p>}
+      {live?.stale && <p className="mb-4 rounded-lg border border-warn/40 bg-[#F6E1D8] px-4 py-2 text-sm text-warn">{live.stale_reason}</p>}
       {live && (
         <>
-          <div className="mb-4 flex flex-wrap gap-2">
-            <SampleNote>Buyer demand is a sample (Innovation Park, {fmt(live.demand_mwh_day, 1)} MWh/day solar share); portfolio = {fmt(live.portfolio_kwp / 1000)} MWp.</SampleNote>
-            {live.stale && <p className="rounded-full border border-warn/40 bg-[#F6E1D8] px-3 py-1 text-xs text-warn">{live.stale_reason}</p>}
-          </div>
-          <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-            <Tomorrow live={live} mode={mode} setMode={setMode} />
-            <section className="card p-5" aria-labelledby="fc14-h">
-              <h2 id="fc14-h" className="font-semibold">Next 14 days</h2>
-              <p className="text-xs text-muted">Issued {shortDate(live.issued_for)} · {live.source}</p>
+          <div className="grid gap-6 xl:grid-cols-[440px_minmax(0,1fr)]">
+            <Tomorrow live={live} mode={mode} />
+            <section className="card p-6" aria-labelledby="fc14-h">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="fc14-h" className="text-lg font-semibold">Next 14 days (MWh per day)</h2>
+                <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted" aria-label="Chart legend">
+                  <li className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-sm border border-primary-light bg-[#DCEFE6]" />Expected (P50)</li>
+                  <li className="flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-sm bg-primary" />Safe to promise (P90)</li>
+                  <li className="flex items-center gap-1.5"><span className="w-5 border-t-2 border-dashed border-[#B5520F]" />Demand {fmt(live.demand_mwh_day, 1)}</li>
+                </ul>
+              </div>
               <Bars live={live} />
+              <p className="mt-3 text-sm text-muted">
+                Weather: Open-Meteo 16-day forecast for Elmina · Model: LightGBM trained on 2017–2022 archived forecasts against NASA POWER
+                history · Roadmap: same-day updates from Himawari satellite cloud images. {live.note}
+              </p>
             </section>
           </div>
-          <PlanTable live={live} />
+          <PlanTable live={live} mode={mode} />
         </>
       )}
-      {bt && (
-        <section className="card mt-6 p-5" aria-labelledby="bt-h">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="bt-h" className="font-semibold">Is the safe amount really safe? Backtest 2023–2025</h2>
-            <Link to="/insights" className="min-h-touch inline-flex items-center text-sm text-primary underline underline-offset-2">See full backtest</Link>
-          </div>
-          <dl className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-line p-4">
-              <dt className="label">P90 promise met</dt>
-              <dd className="mt-1 text-2xl font-semibold num">{pct(bt.test.p90_hit_rate, 1)}</dd>
-              <dd className="text-xs text-muted">of {fmt(bt.test.days)} test days (target 90%)</dd>
-            </div>
-            <div className="rounded-lg border border-warn/40 bg-[#F6E1D8] p-4">
-              <dt className="label !text-warn">Wettest week, promising P50</dt>
-              <dd className="mt-1 text-2xl font-semibold num text-warn">{fmt(bt.wettest_week.shortfall_if_p50_mwh, 1)} MWh short</dd>
-              <dd className="text-xs">{shortDate(bt.wettest_week.start)} – {shortDate(bt.wettest_week.end)} {bt.wettest_week.end.slice(0, 4)}, {fmt(bt.wettest_week.rain_mm)} mm rain</dd>
-            </div>
-            <div className="rounded-lg border border-primary/40 bg-primary/10 p-4">
-              <dt className="label !text-primary">Same week, promising P90</dt>
-              <dd className="mt-1 text-2xl font-semibold num text-primary">{fmt(bt.wettest_week.shortfall_if_p90_mwh, 1)} MWh short</dd>
-              <dd className="text-xs">promise kept almost every day</dd>
-            </div>
-          </dl>
-        </section>
-      )}
+      {bt && <BacktestCards bt={bt} />}
     </>
   )
 }
 
-function Tomorrow({ live, mode, setMode }: { live: Live; mode: 'p90' | 'p50'; setMode: (m: 'p90' | 'p50') => void }) {
+function Tomorrow({ live, mode }: { live: Live; mode: Mode }) {
   const d = live.days[0]
   const commit = d[mode]
-  const gap = commit - live.demand_mwh_day
-  const a = action(gap, live.demand_mwh_day)
   return (
-    <section className="card p-5" aria-labelledby="tmr-h">
-      <h2 id="tmr-h" className="font-semibold">Tomorrow’s commitment</h2>
-      <p className="text-xs text-muted">{weekday(d.date)} {shortDate(d.date)} · {d.rain_mm} mm rain, {d.cloud_pct}% cloud forecast</p>
-      <div role="group" aria-label="Commit at" className="mt-4 inline-flex rounded-lg border border-line p-1">
-        {(['p90', 'p50'] as const).map((m) => (
-          <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}
-            className={`min-h-touch rounded-md px-3 text-sm ${mode === m ? 'bg-primary text-white' : 'text-muted'}`}>
-            {m === 'p90' ? 'Safe (P90)' : 'Expected (P50)'}
-          </button>
+    <section className="flex flex-col rounded-card bg-ink p-7 text-white" aria-labelledby="tmr-h">
+      <h2 id="tmr-h" className="text-[15px] text-white/80">Tomorrow’s commitment · {weekday(d.date)} {shortDate(d.date)}</h2>
+      <p className="mt-3 text-6xl font-medium num leading-none">
+        {fmt(commit, 1)}
+        <span className="ml-2 font-sans text-lg font-normal text-white/80">MWh</span>
+      </p>
+      <p className="mt-5 text-lg leading-snug">
+        {mode === 'p90' ? 'We are 90% sure the portfolio will deliver at least this.' : 'Even odds: on about half of days the portfolio delivers less than this.'}{' '}
+        {weatherPhrase(d)}
+      </p>
+      <dl className="mt-5 space-y-2 border-t border-white/15 pt-5 text-[15px]">
+        {[
+          ['Expected (P50)', d.p50],
+          ['Safe (P90)', d.p90],
+          ['Buyer demand', live.demand_mwh_day],
+        ].map(([k, v]) => (
+          <div key={k as string} className="flex justify-between">
+            <dt className="text-white/85">{k}</dt>
+            <dd className="num font-medium">{fmt(v as number, 1)} MWh</dd>
+          </div>
         ))}
-      </div>
-      <div className="mt-4 text-4xl font-semibold num">{fmt(commit, 1)} <span className="text-base font-normal text-muted">MWh</span></div>
-      <p className="mt-1 text-sm text-muted">Buyer needs {fmt(live.demand_mwh_day, 1)} MWh from solar</p>
-      <p className={`mt-4 rounded-lg p-3 text-sm ${a.tone === 'good' ? 'bg-primary/10' : a.tone === 'warn' ? 'bg-amber-soft' : 'bg-[#F6E1D8]'}`}>
-        <span className="font-semibold">Suggested: </span>{a.text}.
-      </p>
-      <p className="mt-3 text-xs text-muted">
-        {mode === 'p90'
-          ? '90% chance of delivering at least this much. This is what SDP signs for.'
-          : '50/50 chance. Committing this means a shortfall on about half of days.'}
-      </p>
+      </dl>
+      <p className="mt-auto rounded-lg bg-white/10 px-5 py-4 text-[15px] leading-relaxed">{dailyAction(commit - live.demand_mwh_day, live.demand_mwh_day)}</p>
     </section>
   )
 }
 
 function Bars({ live }: { live: Live }) {
-  const W = 760, H = 300
-  const M = { top: 28, right: 84, bottom: 52, left: 44 }
+  const W = 760, H = 330
+  const M = { top: 58, right: 8, bottom: 30, left: 8 }
   const days = live.days
-  const max = Math.ceil((Math.max(live.demand_mwh_day, ...days.map((d) => d.p50)) * 1.15) / 10) * 10
+  const ticks = niceTicks(Math.max(live.demand_mwh_day, ...days.map((d) => d.p50)) * 1.12)
+  const max = ticks[ticks.length - 1]
   const iw = W - M.left - M.right
   const ih = H - M.top - M.bottom
   const slot = iw / days.length
   const x = (i: number) => M.left + slot * i
   const y = (v: number) => M.top + ih - (v / max) * ih
-  const split = days.findIndex((d) => d.confidence === 'medium')
-  const ticks = Array.from({ length: max / 10 + 1 }, (_, i) => i * 10)
+  const split = Math.max(1, days.findIndex((d) => d.confidence === 'medium'))
   const [hover, setHover] = useState<number | null>(null)
 
   return (
-    <figure className="mt-3">
-      <ul className="mb-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted" aria-label="Chart legend">
-        <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-primary-light" />Expected (P50)</li>
-        <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-primary" />Safe to promise (P90)</li>
-        <li className="flex items-center gap-1.5"><span className="w-5 border-t-2 border-dashed border-amber" />Buyer demand</li>
-      </ul>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="14-day forecast bars">
-        {split > 0 && (
-          <>
-            <rect x={x(split)} y={M.top - 20} width={iw - slot * split} height={ih + 20} fill="#F5F4EF" />
-            <text x={x(0) + 4} y={M.top - 8} fontSize={11} fill="#1F6F57" fontWeight={600}>Days 1–7 · high confidence</text>
-            <text x={x(split) + 4} y={M.top - 8} fontSize={11} fill="#5B655F" fontWeight={600}>Days 8–14 · medium confidence</text>
-          </>
-        )}
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="#E2E0D8" />
-            <text x={M.left - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="#5B655F">{Math.round(t)}</text>
-          </g>
-        ))}
-        <text x={12} y={M.top + ih / 2} transform={`rotate(-90 12 ${M.top + ih / 2})`} textAnchor="middle" fontSize={11} fill="#5B655F">MWh per day</text>
+    <figure className="mt-4">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Next 14 days: expected and safe-to-promise energy per day">
+        <rect x={x(0)} y={4} width={slot * split - 2} height={H - M.bottom - 4} fill="#EAF4EF" />
+        <rect x={x(split) + 2} y={4} width={slot * (days.length - split) - 2} height={H - M.bottom - 4} fill="#FDF5E8" />
+        <rect x={x(0)} y={4} width={slot * split - 2} height={44} fill="#DCEFE6" />
+        <rect x={x(split) + 2} y={4} width={slot * (days.length - split) - 2} height={44} fill="#FBEBD3" />
+        <text x={x(0) + 10} y={22} fontSize={12.5} fontWeight={600} fill="#17543F">Days 1–{split} · this week</text>
+        <text x={x(0) + 10} y={39} fontSize={12} fill="#17543F">High confidence: commit daily</text>
+        <text x={x(split) + 12} y={22} fontSize={12.5} fontWeight={600} fill="#7A4A06">Days {split + 1}–{days.length} · next week</text>
+        <text x={x(split) + 12} y={39} fontSize={12} fill="#7A4A06">Medium confidence: plan ahead</text>
+
         {days.map((d, i) => {
-          const bw = slot * 0.66
-          const inner = bw * 0.5
+          const wk1 = i < split
+          const bw = slot * 0.78
+          const inner = bw * 0.55
           const cx = x(i) + slot / 2
           return (
             <g key={d.date} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
-              <rect x={x(i)} y={M.top} width={slot} height={ih + 40} fill="transparent" />
-              <rect x={cx - bw / 2} y={y(d.p50)} width={bw} height={y(0) - y(d.p50)} rx={4} fill="#8CC7B0" />
-              <rect x={cx - inner / 2} y={y(d.p90)} width={inner} height={y(0) - y(d.p90)} rx={3} fill="#1F6F57" stroke="#8CC7B0" strokeWidth={2} />
-              <text x={cx} y={H - M.bottom + 16} textAnchor="middle" fontSize={10} fill="#15201B">{shortDate(d.date)}</text>
-              <text x={cx} y={H - M.bottom + 30} textAnchor="middle" fontSize={10} fill="#5B655F">{weekday(d.date)}</text>
+              <rect x={x(i)} y={M.top} width={slot} height={ih + M.bottom} fill="transparent" />
+              <rect x={cx - bw / 2} y={y(d.p50)} width={bw} height={y(0) - y(d.p50)} rx={3}
+                fill={wk1 ? '#DCEFE6' : '#FDF0DC'} stroke={wk1 ? '#8CC7B0' : '#E8B96A'} strokeWidth={1.5} />
+              <rect x={cx - inner / 2} y={y(d.p90)} width={inner} height={y(0) - y(d.p90)} rx={2} fill={wk1 ? '#1F6F57' : '#3E8670'} />
+              <text x={cx} y={H - 8} textAnchor="middle" fontSize={12} fill="#5B655F">{dayNum(d.date)}</text>
             </g>
           )
         })}
-        <line x1={M.left} x2={W - M.right} y1={y(live.demand_mwh_day)} y2={y(live.demand_mwh_day)} stroke="#E39B2E" strokeWidth={2} strokeDasharray="6 5" pointerEvents="none" />
-        <text x={W - M.right + 6} y={y(live.demand_mwh_day) + 4} fontSize={11} fill="#15201B">Demand {fmt(live.demand_mwh_day, 1)}</text>
+        <line x1={M.left} x2={W - M.right} y1={y(0)} y2={y(0)} stroke="#9AA39E" />
+        <line x1={M.left} x2={W - M.right} y1={y(live.demand_mwh_day)} y2={y(live.demand_mwh_day)} stroke="#B5520F" strokeWidth={2} strokeDasharray="5 4" pointerEvents="none" />
+
         {hover !== null && (() => {
           const d = days[hover]
-          const tx = Math.min(Math.max(x(hover) - 60, M.left), W - M.right - 150)
+          const tx = Math.min(Math.max(x(hover) - 70, M.left), W - M.right - 170)
           return (
             <g pointerEvents="none">
-              <rect x={tx} y={M.top} width={150} height={58} rx={8} fill="#15201B" />
-              <text x={tx + 10} y={M.top + 18} fontSize={11} fill="#fff" fontWeight={600}>{weekday(d.date)} {shortDate(d.date)} · {d.rain_mm} mm</text>
-              <text x={tx + 10} y={M.top + 34} fontSize={11} fill="#fff">Expected {d.p50} MWh</text>
-              <text x={tx + 10} y={M.top + 50} fontSize={11} fill="#8CC7B0">Safe {d.p90} MWh</text>
+              <rect x={tx} y={M.top + 6} width={170} height={64} rx={8} fill="#15201B" />
+              <text x={tx + 10} y={M.top + 25} fontSize={12} fill="#fff" fontWeight={600}>{weekday(d.date)} {shortDate(d.date)} · {d.rain_mm} mm rain</text>
+              <text x={tx + 10} y={M.top + 43} fontSize={12} fill="#fff">Expected {fmt(d.p50, 1)} MWh</text>
+              <text x={tx + 10} y={M.top + 60} fontSize={12} fill="#8CC7B0">Safe {fmt(d.p90, 1)} MWh</text>
             </g>
           )
         })()}
       </svg>
-      <figcaption className="text-xs text-muted">{live.note}</figcaption>
     </figure>
   )
 }
 
-function PlanTable({ live }: { live: Live }) {
+function PlanTable({ live, mode }: { live: Live; mode: Mode }) {
+  const demand = live.demand_mwh_day
+  const split = Math.max(1, live.days.findIndex((d) => d.confidence === 'medium'))
+  const wk1 = live.days.slice(0, split)
+  const wk2 = live.days.slice(split)
   const t = live.days_15_30_typical
-  const tGap = t.p90 - live.demand_mwh_day
+  const nLater = Math.round((new Date(`${t.to}T00:00:00`).getTime() - new Date(`${t.from}T00:00:00`).getTime()) / 864e5) + 1
+  const monsoon = [11, 12, 1, 2, 3].includes(new Date(`${t.from}T00:00:00`).getMonth() + 1)
+  const promiseLabel = mode === 'p90' ? 'Safe to promise' : 'Promise (P50)'
+
+  const rows = [
+    {
+      period: 'This week', range: `${shortDate(wk1[0].date)} – ${shortDate(wk1[wk1.length - 1].date)}`, conf: 'High' as const,
+      exp: sum(wk1.map((d) => d.p50)), safe: sum(wk1.map((d) => d[mode])), need: demand * wk1.length,
+      action: (gap: number) => (gap >= 0 ? `Commit daily; offer ${fmt(gap, 1)} MWh surplus to other buyers` : `Commit daily; top up ${fmt(-gap, 1)} MWh from the grid on short days`),
+    },
+    {
+      period: 'Next week', range: `${shortDate(wk2[0].date)} – ${shortDate(wk2[wk2.length - 1].date)}`, conf: 'Medium' as const,
+      exp: sum(wk2.map((d) => d.p50)), safe: sum(wk2.map((d) => d[mode])), need: demand * wk2.length,
+      action: (gap: number) => (gap >= 0 ? 'Hold surplus until the forecast firms up' : `Pre-book ${fmt(-gap, 1)} MWh of grid top-up; confirm daily`),
+    },
+    {
+      period: 'Days 15–30 (typical)', range: `${shortDate(t.from)} – ${shortDate(t.to)}`, conf: 'History' as const,
+      exp: t.p50 * nLater, safe: (mode === 'p90' ? t.p90 : t.p50) * nLater, need: demand * nLater,
+      action: (gap: number) => (gap >= 0 ? 'Typical month covers demand' : `${monsoon ? 'Monsoon month: book' : 'Book'} a green grid top-up in advance`),
+    },
+  ]
+  const safe14 = rows[0].safe + rows[1].safe
+  const need14 = rows[0].need + rows[1].need
+  const pill = { High: 'bg-[#DCEFE6] text-primary-dark', Medium: 'bg-amber-soft text-[#7A4A06]', History: 'border border-dashed border-muted text-ink' }
+
   return (
-    <section className="card mt-6 overflow-x-auto p-5" aria-labelledby="plan-h">
-      <h2 id="plan-h" className="font-semibold">Two-week plan</h2>
-      <table className="mt-3 w-full text-sm">
-        <thead className="text-left label">
-          <tr>
-            <th scope="col" className="py-2 font-medium">Day</th>
-            <th scope="col" className="font-medium text-right">Expected</th>
-            <th scope="col" className="font-medium text-right">Safe to promise</th>
-            <th scope="col" className="font-medium text-right">Buyer needs</th>
-            <th scope="col" className="font-medium text-right">Gap</th>
-            <th scope="col" className="pl-6 font-medium">Suggested action</th>
-          </tr>
-        </thead>
-        <tbody className="num">
-          {live.days.map((d) => {
-            const gap = d.p90 - live.demand_mwh_day
-            const a = action(gap, live.demand_mwh_day)
-            return (
-              <tr key={d.date} className="border-t border-line">
-                <td className="py-2.5 font-sans">{weekday(d.date)} {shortDate(d.date)} {d.confidence === 'medium' && <span className="ml-1 text-xs text-muted">· medium</span>}</td>
-                <td className="text-right">{fmt(d.p50, 1)}</td>
-                <td className="text-right font-semibold">{fmt(d.p90, 1)}</td>
-                <td className="text-right">{fmt(live.demand_mwh_day, 1)}</td>
-                <td className={`text-right ${gap >= 0 ? 'text-primary' : 'text-warn'}`}>{gap >= 0 ? '+' : ''}{fmt(gap, 1)}</td>
-                <td className="pl-6 font-sans">
-                  <span className={`mr-2 inline-block h-2 w-2 rounded-full ${a.tone === 'good' ? 'bg-primary' : a.tone === 'warn' ? 'bg-amber' : 'bg-warn'}`} aria-hidden="true" />
-                  {a.text}
-                </td>
-              </tr>
-            )
-          })}
-          <tr className="border-t-2 border-line bg-page">
-            <td className="py-2.5 font-sans">Days 15–30 (typical)<div className="text-xs text-muted">{t.basis}</div></td>
-            <td className="text-right">{fmt(t.p50, 1)}</td>
-            <td className="text-right font-semibold">{fmt(t.p90, 1)}</td>
-            <td className="text-right">{fmt(live.demand_mwh_day, 1)}</td>
-            <td className={`text-right ${tGap >= 0 ? 'text-primary' : 'text-warn'}`}>{tGap >= 0 ? '+' : ''}{fmt(tGap, 1)}</td>
-            <td className="pl-6 font-sans">Per day. Plan reserve contracts monthly, not daily</td>
-          </tr>
-        </tbody>
-      </table>
-      <p className="mt-3 text-xs text-muted">All values MWh per day. Generated {new Date(live.generated_at).toLocaleString('en-MY')} · lags: {live.lag_source}.</p>
+    <section className="card mt-6 p-6" aria-labelledby="plan-h">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="plan-h" className="text-lg font-semibold">Two-week plan</h2>
+        <p className="text-[15px] text-muted">
+          {mode === 'p90' ? 'Safe to promise' : 'P50 promise'} over 14 days: <span className="num font-semibold text-ink">{fmt(safe14)} MWh</span> of{' '}
+          <span className="num font-semibold text-ink">{fmt(need14)} MWh</span> needed
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="mt-4 w-full text-[15px]">
+          <thead className="border-b border-line text-left text-sm text-muted">
+            <tr>
+              <th scope="col" className="px-2 py-3 font-medium">Period</th>
+              <th scope="col" className="px-2 py-3 font-medium">Confidence</th>
+              <th scope="col" className="px-2 py-3 font-medium">Expected</th>
+              <th scope="col" className="px-2 py-3 font-medium">{promiseLabel}</th>
+              <th scope="col" className="px-2 py-3 font-medium">Buyer needs</th>
+              <th scope="col" className="px-2 py-3 font-medium">Gap</th>
+              <th scope="col" className="px-2 py-3 font-medium">Suggested action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const gap = r.safe - r.need
+              return (
+                <tr key={r.period} className="border-b border-line last:border-0">
+                  <td className="px-2 py-4"><span className="font-semibold">{r.period}</span><div className="text-sm text-muted">{r.range}</div></td>
+                  <td className="px-2 py-4"><span className={`rounded-full px-2.5 py-1 text-sm font-medium ${pill[r.conf]}`}>{r.conf}</span></td>
+                  <td className="px-2 py-4 num">{fmt(r.exp, 1)}</td>
+                  <td className="px-2 py-4 num">{fmt(r.safe, 1)}</td>
+                  <td className="px-2 py-4 num">{fmt(r.need, 1)}</td>
+                  <td className={`px-2 py-4 num ${gap >= 0 ? 'text-primary' : 'text-warn'}`}>{gap >= 0 ? '+' : ''}{fmt(gap, 1)}</td>
+                  <td className="px-2 py-4">{r.action(gap)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-sm text-muted">
+        MWh per period. Re-run every morning. The last row is not a forecast: it shows what normally happens on those dates, from 11 years of
+        history · {t.basis}.
+      </p>
+      <details className="mt-3 text-sm">
+        <summary className="min-h-touch cursor-pointer py-2 text-primary">Show day-by-day detail</summary>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-muted">
+              <tr><th className="py-1 pr-3 font-medium">Day</th><th className="pr-3 font-medium">Rain</th><th className="pr-3 font-medium">Expected</th><th className="pr-3 font-medium">Safe</th><th className="pr-3 font-medium">Gap vs demand</th><th className="font-medium">Action</th></tr>
+            </thead>
+            <tbody className="num">
+              {live.days.map((d) => {
+                const gap = d[mode] - demand
+                return (
+                  <tr key={d.date} className="border-t border-line">
+                    <td className="py-1.5 pr-3 font-sans">{weekday(d.date)} {shortDate(d.date)}</td>
+                    <td className="pr-3">{d.rain_mm} mm</td>
+                    <td className="pr-3">{fmt(d.p50, 1)}</td>
+                    <td className="pr-3">{fmt(d.p90, 1)}</td>
+                    <td className={`pr-3 ${gap >= 0 ? 'text-primary' : 'text-warn'}`}>{gap >= 0 ? '+' : ''}{fmt(gap, 1)}</td>
+                    <td className="font-sans">{dailyAction(gap, demand)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-xs text-muted">Generated {new Date(live.generated_at).toLocaleString('en-MY')} · lags: {live.lag_source} · portfolio {fmt(live.portfolio_kwp)} kWp.</p>
+      </details>
+    </section>
+  )
+}
+
+function BacktestCards({ bt }: { bt: Backtest }) {
+  const w = bt.wettest_week
+  return (
+    <section className="card mt-6 p-6" aria-labelledby="bt-h">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="bt-h" className="text-lg font-semibold">Backtest: would our promises have held?</h2>
+        <p className="text-[15px] text-muted">Test period 2023–2025, unseen by the model · wettest week {shortDate(w.start)} – {shortDate(w.end)} {w.end.slice(0, 4)}, {fmt(w.rain_mm)} mm rain</p>
+      </div>
+      <dl className="mt-4 grid gap-4 md:grid-cols-3">
+        <div className="rounded-card bg-page px-6 py-5">
+          <dt className="text-[15px] text-muted">Days the P90 promise was met</dt>
+          <dd className="mt-2 text-4xl font-medium num">{pct(bt.test.p90_hit_rate, 1)}</dd>
+          <dd className="mt-2 text-[15px] text-muted">Target: about 90% · {pct('error' in bt.day_ahead_check ? 0 : bt.day_ahead_check.p90_hit_rate, 1)} on true day-ahead forecasts</dd>
+        </div>
+        <div className="rounded-card bg-page px-6 py-5">
+          <dt className="text-[15px] text-muted">Wettest week · naive promise (P50)</dt>
+          <dd className="mt-2 text-4xl font-medium num text-warn">{fmt(w.shortfall_if_p50_mwh, 1)} MWh short</dd>
+          <dd className="mt-2 text-[15px] text-muted">≈ RM [X] in penalties</dd>
+        </div>
+        <div className="rounded-card bg-page px-6 py-5">
+          <dt className="text-[15px] text-muted">Wettest week · P90 promise</dt>
+          <dd className="mt-2 text-4xl font-medium num text-primary">{fmt(w.shortfall_if_p90_mwh, 1)} MWh short</dd>
+          <dd className="mt-2 text-[15px] text-muted">≈ RM [X] in penalties</dd>
+        </div>
+      </dl>
     </section>
   )
 }

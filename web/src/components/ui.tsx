@@ -1,14 +1,34 @@
 import type { ReactNode } from 'react'
 
-export function PageHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+export function PageHeader({ title, subtitle, eyebrow, right }: { title: string; subtitle?: ReactNode; eyebrow?: string; right?: ReactNode }) {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted max-w-2xl">{subtitle}</p>}
+        {eyebrow && <p className="mb-1 text-sm font-medium text-primary">{eyebrow}</p>}
+        <h1 className="text-[28px] font-semibold leading-tight">{title}</h1>
+        {subtitle && <p className="mt-1 max-w-3xl text-[15px] text-muted">{subtitle}</p>}
       </div>
-      {right}
+      {right && <div className="flex flex-wrap items-center gap-3">{right}</div>}
     </header>
+  )
+}
+
+/** Segmented control; the active option is dark ink. */
+export function Segmented<T extends string>({ label, options, value, onChange }: { label: string; options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <div role="group" aria-label={label} className="inline-flex rounded-lg border border-line bg-card p-1">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          aria-pressed={value === o.id}
+          onClick={() => onChange(o.id)}
+          className={`min-h-touch rounded-md px-4 text-sm font-medium ${value === o.id ? 'bg-ink text-white' : 'text-ink hover:bg-page'}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -23,13 +43,13 @@ export function SampleNote({ children = 'Sample data — scores, shading, roof c
 
 export function Kpi({ label, value, unit, hint }: { label: string; value: ReactNode; unit?: string; hint?: string }) {
   return (
-    <div className="card p-4">
-      <div className="label">{label}</div>
-      <div className="mt-2 text-2xl font-semibold num">
+    <div className="card px-6 py-5">
+      <div className="text-sm text-muted">{label}</div>
+      <div className="mt-2 text-[28px] font-medium leading-none num">
         {value}
-        {unit && <span className="ml-1 text-sm font-normal text-muted">{unit}</span>}
+        {unit && <span className="ml-2 text-base font-normal text-muted">{unit}</span>}
       </div>
-      {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
+      {hint && <div className="mt-2 text-xs text-muted">{hint}</div>}
     </div>
   )
 }

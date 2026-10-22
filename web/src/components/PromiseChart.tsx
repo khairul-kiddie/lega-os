@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fmt } from '../lib/data'
+import { fmt, niceTicks } from '../lib/data'
 import { shortDate, WEATHER_LABEL, type SampleDay } from '../lib/forecast'
 
 const W = 820
@@ -9,13 +9,13 @@ const M = { top: 16, right: 92, bottom: 56, left: 48 }
 /** "Did the forecast keep its promises?" — range band (P90→P10), promise line (P90), actual dots, demand line. */
 export default function PromiseChart({ days, demand, selected, onSelect }: { days: SampleDay[]; demand: number; selected: number | null; onSelect: (i: number) => void }) {
   const [hover, setHover] = useState<number | null>(null)
-  const max = Math.ceil((Math.max(demand, ...days.flatMap((d) => [d.p10, d.actual])) * 1.1) / 10) * 10
+  const ticks = niceTicks(Math.max(demand, ...days.flatMap((d) => [d.p10, d.actual])) * 1.08)
+  const max = ticks[ticks.length - 1]
   const iw = W - M.left - M.right
   const ih = H - M.top - M.bottom
   const slot = iw / days.length
   const x = (i: number) => M.left + slot * (i + 0.5)
   const y = (v: number) => M.top + ih - (v / max) * ih
-  const ticks = Array.from({ length: 5 }, (_, i) => (max / 4) * i)
   const promise = days.map((d, i) => `${x(i)},${y(d.p90)}`).join(' ')
   const active = hover ?? selected
 
