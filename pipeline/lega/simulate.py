@@ -17,8 +17,8 @@ from .config import DATA, SITE, SYSTEM, WEB_DATA, YIELD_SANITY_RANGE
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
-def hourly_from_daily(daily: pd.DataFrame) -> pd.DataFrame:
-    loc = pvlib.location.Location(SITE["lat"], SITE["lon"], SITE["tz"], SITE["altitude_m"])
+def hourly_from_daily(daily: pd.DataFrame, site: dict = SITE) -> pd.DataFrame:
+    loc = pvlib.location.Location(site["lat"], site["lon"], SITE["tz"], SITE["altitude_m"])
     start = daily.index.min()
     end = daily.index.max() + pd.Timedelta(hours=23, minutes=30)
     # mid-hour timestamps so each sample represents the full hour
@@ -49,6 +49,14 @@ def hourly_from_daily(daily: pd.DataFrame) -> pd.DataFrame:
     ac = pvlib.inverter.pvwatts(dc, pdc0 / 1.1, eta_inv_nom=SYSTEM["inverter_eff"])
     ac = np.clip(np.nan_to_num(np.asarray(ac)), 0, None)
     return pd.DataFrame({"ac_w": ac, "poa": np.asarray(poa["poa_global"]), "ghi": ghi}, index=times)
+
+
+def annual_yield(lat: float, lon: float) -> float:
+    """Mean annual kWh/kWp for any point (NASA POWER cell + same PVWatts system)."""
+    daily = nasa_power.load(lat, lon)
+    h = hourly_from_daily(daily, {"lat": lat, "lon": lon})
+    kwh = h["ac_w"].groupby(h.index.tz_localize(None).year).sum() / 1000
+    return float(kwh[kwh.index <= 2025].mean())
 
 
 def run():

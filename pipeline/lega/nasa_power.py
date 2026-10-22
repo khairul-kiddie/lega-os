@@ -18,14 +18,16 @@ PARAMS = {
 URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 
 
-def fetch(start: str = HIST_START, end: str = HIST_END) -> dict:
+def fetch(start: str = HIST_START, end: str = HIST_END, lat: float | None = None, lon: float | None = None) -> dict:
     RAW.mkdir(parents=True, exist_ok=True)
-    cache = RAW / f"nasa_power_{start}_{end}.json"
+    lat, lon = (SITE["lat"], SITE["lon"]) if lat is None else (lat, lon)
+    tag = "" if (lat, lon) == (SITE["lat"], SITE["lon"]) else f"_{lat:.3f}_{lon:.3f}"
+    cache = RAW / f"nasa_power_{start}_{end}{tag}.json"
     if cache.exists():
         return json.loads(cache.read_text())
     r = requests.get(URL, timeout=120, params={
         "parameters": ",".join(PARAMS), "community": "RE",
-        "latitude": SITE["lat"], "longitude": SITE["lon"],
+        "latitude": lat, "longitude": lon,
         "start": start.replace("-", ""), "end": end.replace("-", ""), "format": "JSON",
     })
     r.raise_for_status()
@@ -33,8 +35,8 @@ def fetch(start: str = HIST_START, end: str = HIST_END) -> dict:
     return r.json()
 
 
-def load() -> pd.DataFrame:
-    raw = fetch()["properties"]["parameter"]
+def load(lat: float | None = None, lon: float | None = None) -> pd.DataFrame:
+    raw = fetch(lat=lat, lon=lon)["properties"]["parameter"]
     df = pd.DataFrame({PARAMS[k]: pd.Series(v) for k, v in raw.items()})
     df.index = pd.to_datetime(df.index, format="%Y%m%d")
     df = df.replace(-999.0, float("nan"))

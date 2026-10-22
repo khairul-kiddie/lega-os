@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import PromiseChart from '../components/PromiseChart'
 import { PageHeader, SampleNote, Segmented } from '../components/ui'
-import { groupName } from '../lib/store'
+import { isHome, loadRoofs, type SatRoof, type TownshipIndex, type TownshipMeta } from '../lib/townships'
 import { fmt, useJson } from '../lib/data'
-import type { Roof, RoofsData, ScorePart, SiteKey, YieldData, Zone } from '../lib/data'
+import type { Roof, ScorePart, YieldData } from '../lib/data'
 import { pct, shortDate, WEATHER_LABEL, type Backtest } from '../lib/forecast'
 
 type Tab = 'roof' | 'forecast'
@@ -201,41 +201,45 @@ function TrustPill({ t }: { t: 'High' | 'Medium' | 'Low' }) {
 
 /* ---------------- Roof scoring model ---------------- */
 
-type Example = { id: string; label: string; r: Roof; z: Zone; site: SiteKey }
+type Example = { id: string; label: string; r: SatRoof; town: TownshipMeta; median: number }
 
 function RoofTab() {
-  const { data } = useJson<RoofsData>('roofs.json')
+  const { data: index } = useJson<TownshipIndex>('townships/index.json')
   const { data: y } = useJson<YieldData>('yield.json')
-  const examples = useMemo<Example[]>(() => {
-    if (!data) return []
-    const all = (site: SiteKey) => data.sites[site].zones.flatMap((z) => z.roofs.map((r) => ({ r, z, site })))
-    const byScore = (xs: { r: Roof }[]) => [...xs].sort((a, b) => b.r.score - a.r.score)
-    const homes = byScore(all('homes'))
-    const factories = byScore(all('business_park').filter(({ z }) => z.type === 'f' || z.type === 'm'))
-    const everything = byScore([...all('homes'), ...all('business_park')])
-    return [
-      { id: 'home', label: 'Best home', ...homes[0] },
-      { id: 'factory', label: 'Best factory', ...factories[0] },
-      { id: 'median', label: 'Median roof', ...everything[Math.floor(everything.length / 2)] },
-      { id: 'weak', label: 'Weakest roof', ...everything[everything.length - 1] },
-    ] as Example[]
-  }, [data])
+  const [examples, setExamples] = useState<Example[]>([])
+  useEffect(() => {
+    if (!index) return
+    const town = (id: string) => index.townships.find((t) => t.id === id)!
+    Promise.all([loadRoofs('elmina'), loadRoofs('bukit-raja')]).then(([elmina, raja]) => {
+      const byScore = (xs: SatRoof[]) => [...xs].sort((a, b) => b.score - a.score || b.kwp - a.kwp)
+      const median = (xs: SatRoof[]) => [...xs.map((r) => r.shade_loss_pct)].sort((a, b) => a - b)[Math.floor(xs.length / 2)]
+      const eH = byScore(elmina.filter((r) => isHome(r.cls)))
+      const rL = byScore(raja.filter((r) => r.cls === 'large'))
+      const eAll = byScore(elmina)
+      const mE = median(elmina)
+      setExamples([
+        { id: 'home', label: 'Best home', r: eH[0], town: town('elmina'), median: mE },
+        { id: 'factory', label: 'Best factory', r: rL[0], town: town('bukit-raja'), median: median(raja) },
+        { id: 'median', label: 'Median roof', r: eAll[Math.floor(eAll.length / 2)], town: town('elmina'), median: mE },
+        { id: 'weak', label: 'Weakest roof', r: eAll[eAll.length - 1], town: town('elmina'), median: mE },
+      ])
+    })
+  }, [index])
   const [pick, setPick] = useState('home')
-  if (!data || !y || !examples.length) return <p className="text-muted">Loading…</p>
+  if (!y || !examples.length) return <p className="text-muted">Loading…</p>
   const ex = examples.find((e) => e.id === pick) ?? examples[0]
-  const siteRoofs = data.sites[ex.site].zones.flatMap((z) => z.roofs)
-  const median = [...siteRoofs.map((r) => r.shade_loss_pct)].sort((a, b) => a - b)[Math.floor(siteRoofs.length / 2)]
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex flex-wrap items-center gap-2 text-[15px] text-muted">
-          Pipeline for <span className="font-semibold text-ink">{ex.r.label}, {groupName(ex.z)}</span> ·
+          Pipeline for <span className="font-semibold text-ink">{ex.r.label}, {ex.town.name}</span> ·
           <span className="rounded-full bg-[#DCEFE6] px-3 py-1 font-medium text-primary-dark">Final score {ex.r.score}</span>
+          <Link to={`/map?t=${ex.town.id}&roof=${ex.r.id}`} className="min-h-touch inline-flex items-center text-primary underline underline-offset-2">See it on the map</Link>
         </p>
         <Segmented label="Example roof" value={pick} onChange={setPick} options={examples.map((e) => ({ id: e.id, label: e.label }))} />
       </div>
-      <RoofPipeline data={data} y={y} roof={ex.r} zone={ex.z} townshipMedian={median} />
+      <RoofPipeline siteYield={ex.town.summary.yield_kwh_kwp} y={y} roof={ex.r} home={isHome(ex.r.cls)} townshipMedian={ex.median} />
     </div>
   )
 }
@@ -276,17 +280,35 @@ function shadeStrip(lossPct: number): ('sun' | 'part' | 'shade')[] {
   return cells
 }
 
-function RoofPipeline({ data, y, roof, zone, townshipMedian }: { data: RoofsData; y: YieldData; roof: Roof; zone: Zone; townshipMedian: number }) {
-  const w = data.weights
+const WEIGHTS: Record<ScorePart, number> = { yield: 0.4, shading: 0.2, condition: 0.2, likelihood: 0.2 }
+
+/** The roof's real detected footprint, scaled to fit the card. */
+function Outline({ ring }: { ring: [number, number][] }) {
+  const lat0 = ring[0][0]
+  const pts = ring.map(([lat, lng]) => [lng * Math.cos((lat0 * Math.PI) / 180), -lat] as const)
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1])
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+  const k = Math.min(280 / (x1 - x0 || 1), 150 / (y1 - y0 || 1))
+  const ox = (340 - (x1 - x0) * k) / 2, oy = (208 - (y1 - y0) * k) / 2
+  const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${(ox + (x - x0) * k).toFixed(1)},${(oy + (y - y0) * k).toFixed(1)}`).join(' ') + 'Z'
+  return (
+    <svg viewBox="0 0 340 208" className="mt-4 w-full rounded-lg" role="img" aria-label="Detected roof outline (real footprint shape)">
+      <rect width="340" height="208" fill="#8E928A" />
+      <path d={d} fill="#C7C1B0" stroke="#E39B2E" strokeWidth="4" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function RoofPipeline({ siteYield, y, roof, home, townshipMedian }: { siteYield: number; y: YieldData; roof: Roof; home: boolean; townshipMedian: number }) {
+  const w = WEIGHTS
   const pts = (k: ScorePart) => w[k] * roof.parts[k]
   const monthly = y.monthly.map((m, i) => ({ m: m.month, kwh: m.kwh_per_kwp * roof.kwp, monsoon: [0, 1, 2, 10, 11].includes(i) }))
   const maxM = Math.max(...monthly.map((m) => m.kwh))
-  const home = zone.type === 'h' || zone.type === 'a'
   const strip = shadeStrip(roof.shade_loss_pct)
   const cellCls = { sun: 'bg-amber', part: 'bg-[#B9C0BB]', shade: 'bg-[#6E7772]' }
 
   const sentences = [
-    `${roof.aspect.startsWith('Flat') ? 'Large flat roof' : `${roof.aspect}-facing roof plane`} with ${roof.shade_loss_pct < 1 ? 'almost no shading' : `${fmt(roof.shade_loss_pct, 1)}% of sun lost to shade`} (township median ${fmt(townshipMedian, 1)}%).`,
+    `${roof.aspect.startsWith('Flat') ? 'Large flat roof' : roof.aspect === 'Pitched roof' ? 'Pitched roof' : `${roof.aspect}-facing roof plane`} with ${roof.shade_loss_pct < 1 ? 'almost no shading' : `${fmt(roof.shade_loss_pct, 1)}% of sun lost to shade`} (township median ${fmt(townshipMedian, 1)}%).`,
     roof.parts.condition >= 75 ? `Roof in good condition (${roof.roof_age_yrs} yrs old), so no repair is needed before install.` : `Roof condition ${roof.parts.condition}/100 (${roof.roof_age_yrs} yrs old): inspect before install.`,
     `${roof.owner}${roof.why.includes('attended SDP solar briefing') ? ' who attended an SDP solar briefing' : ''}, ${roof.lease_years_left} years left on lease or title.`,
   ]
@@ -295,7 +317,8 @@ function RoofPipeline({ data, y, roof, zone, townshipMedian }: { data: RoofsData
   return (
     <>
       <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StepCard n={1} step="DETECT" title="Find the roof">
+        <StepCard n={1} step="DETECT" title="Find the roof" real>
+          {'ring' in roof ? <Outline ring={(roof as SatRoof).ring} /> : (
           <svg viewBox="0 0 340 208" className="mt-4 w-full rounded-lg" role="img" aria-label="Illustration: detected roof outline on a satellite tile">
             <rect width="340" height="208" fill="#8E928A" />
             <rect y="188" width="340" height="20" fill="#6F746D" />
@@ -314,8 +337,9 @@ function RoofPipeline({ data, y, roof, zone, townshipMedian }: { data: RoofsData
               </>
             )}
           </svg>
-          <p className="mt-4 text-sm text-muted">Input: satellite tile + building outline. Pretrained segmentation finds the roof planes.</p>
-          <Stats rows={[['Roof area', `${fmt(roof.area_m2)} m²`], ['Usable for panels', `${fmt(roof.usable_m2)} m²`], ['Best plane faces', roof.aspect.replace(' (low-pitch metal deck)', '')]]} />
+          )}
+          <p className="mt-4 text-sm text-muted">Input: satellite imagery. Roof outline from Microsoft’s ML building footprints (real); usable area estimated by roof type.</p>
+          <Stats rows={[['Roof area', `${fmt(roof.area_m2)} m²`], ['Usable for panels', `${fmt(roof.usable_m2)} m²`], [roof.aspect === 'Flat roof' || roof.aspect === 'Pitched roof' ? 'Roof type' : 'Best plane faces', roof.aspect.replace(' (low-pitch metal deck)', '')]]} />
         </StepCard>
 
         <StepCard n={2} step="SHADE" title="Check for shading">
@@ -323,7 +347,7 @@ function RoofPipeline({ data, y, roof, zone, townshipMedian }: { data: RoofsData
             {strip.map((c, i) => <span key={i} className={`h-9 ${cellCls[c]}`} />)}
           </div>
           <div className="mt-1 flex justify-between text-xs text-muted"><span>7am</span><span>12pm</span><span>6pm</span></div>
-          <p className="mt-3 text-sm text-muted">Input: neighbouring building heights + sun path for Elmina. Orange = full sun on panels.</p>
+          <p className="mt-3 text-sm text-muted">Input: neighbouring building heights + sun path for this township. Orange = full sun on panels.</p>
           <Stats rows={[['Sun lost to shade', `${fmt(roof.shade_loss_pct, 1)}%`], ['Township median', `${fmt(townshipMedian, 1)}%`]]} />
         </StepCard>
 
@@ -363,9 +387,9 @@ function RoofPipeline({ data, y, roof, zone, townshipMedian }: { data: RoofsData
         <div>
           <h2 className="text-lg font-semibold">Model confidence</h2>
           <p className="mt-2 text-[15px] leading-relaxed">
-            Detection will be checked against [X] hand-labelled Elmina roofs: [XX]% match. Yield is checked against the 1,100–1,500 kWh/kWp
-            range typical for Peninsular Malaysia rooftops ({fmt(data.site_yield_kwh_kwp)} passes). Roof size, shading and condition are sample
-            data; likelihood to sign is rule-based until SDP shares lease data.
+            Roof outlines are real (Microsoft ML footprints); roof type is estimated from size and shape and will be checked against [X] hand-labelled Elmina roofs: [XX]% match. Yield is checked against the 1,100–1,500 kWh/kWp
+            range typical for Peninsular Malaysia rooftops ({fmt(siteYield)} here passes). Shading and condition are sample
+            data (the footprints have no building heights); likelihood to sign is rule-based until SDP shares lease data.
           </p>
         </div>
       </section>

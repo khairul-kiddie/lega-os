@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/ui'
 import { fmt, loadJson } from '../lib/data'
-import type { RoofsData, YieldData } from '../lib/data'
-import { buildPlan, portfolioStore, SAMPLE_PORTFOLIO_ID } from '../lib/portfolio'
-import { leaseItem, leasingStore, useStore, type LeaseItem, type LeaseStatus } from '../lib/store'
+import type { YieldData } from '../lib/data'
+import { buildPlan, GOOD_SCORE, portfolioStore, SAMPLE_PORTFOLIO_ID } from '../lib/portfolio'
+import { leaseItemSat, leasingStore, useStore, type LeaseItem, type LeaseStatus } from '../lib/store'
+import { loadIndex, loadRoofs, scannedStore } from '../lib/townships'
 
 const STATUS: { id: LeaseStatus; label: string; cls: string }[] = [
   { id: 'to_approach', label: 'To approach', cls: 'bg-page text-ink' },
@@ -24,7 +25,7 @@ const FILTERS: { id: LeaseStatus | 'all'; label: string }[] = [
 ]
 
 function nextStep(r: LeaseItem): string {
-  const home = r.label.startsWith('Lot')
+  const home = r.label.startsWith('Lot') || r.label.startsWith('House') || r.label.startsWith('Terrace')
   switch (r.status) {
     case 'to_approach': return home ? 'Door visit' : 'Book a site visit'
     case 'visited': return 'Follow up within a week'
@@ -34,11 +35,12 @@ function nextStep(r: LeaseItem): string {
   }
 }
 
-const SEEDED_KEY = 'lega.leasing.seeded.v2'
+const SEEDED_KEY = 'lega.leasing.seeded.v3'
 
 export default function Leasing() {
   const items = useStore(leasingStore)
   const portfolios = useStore(portfolioStore)
+  const scanned = useStore(scannedStore)
   const [filter, setFilter] = useState<LeaseStatus | 'all'>('all')
   const [target, setTarget] = useState<number | null>(null)
 
@@ -58,13 +60,13 @@ export default function Leasing() {
   useEffect(() => {
     let live = true
     const sent = portfolios.filter((p) => p.status === 'Sent to leasing')
-    Promise.all([loadJson<RoofsData>('roofs.json'), loadJson<YieldData>('yield.json')]).then(([d, y]) => {
-      if (live) setTarget(sent.length ? sent.reduce((a, p) => a + (buildPlan(p, d, y)?.roofsNeeded ?? 0), 0) : null)
+    Promise.all([loadIndex(), loadJson<YieldData>('yield.json')]).then(([d, y]) => {
+      if (live) setTarget(sent.length ? sent.reduce((a, p) => a + (buildPlan(p, d, y, scanned)?.roofsNeeded ?? 0), 0) : null)
     })
     return () => {
       live = false
     }
-  }, [portfolios])
+  }, [portfolios, scanned])
 
   const counts = Object.fromEntries(STATUS.map((s) => [s.id, items.filter((i) => i.status === s.id).length])) as Record<LeaseStatus, number>
   const needed = target ?? items.length
@@ -72,7 +74,7 @@ export default function Leasing() {
   const rows = ranked.map((r, i) => ({ r, rank: i + 1 })).filter(({ r }) => filter === 'all' || r.status === filter)
   const setStatus = (id: string, status: LeaseStatus) => leasingStore.set((l) => l.map((x) => (x.roofId === id ? { ...x, status } : x)))
   const sentNames = portfolios.filter((p) => p.status === 'Sent to leasing').map((p) => p.buyer)
-  const allHomes = items.length > 0 && items.every((i) => i.label.startsWith('Lot'))
+  const allHomes = items.length > 0 && items.every((i) => i.label.startsWith('Lot') || i.label.startsWith('House') || i.label.startsWith('Terrace'))
   const subtitle = `${allHomes ? 'Homes' : 'Roofs'} to approach${sentNames.length === 1 ? ` for the ${sentNames[0]} portfolio` : ''}, best first · sample data`
   const pct = (n: number) => `${Math.min(100, (n / Math.max(needed, 1)) * 100)}%`
 
@@ -143,7 +145,11 @@ export default function Leasing() {
                     <tr key={r.roofId} className="border-b border-line last:border-0">
                       <td className="px-2 py-3 num">{rank}</td>
                       <td className="px-2 py-3">
-                        <span className="font-semibold">{r.label}</span>
+                        {r.site !== 'business_park' && r.site !== 'homes' ? (
+                          <Link to={`/map?t=${r.site}&roof=${r.roofId}`} className="font-semibold underline decoration-line underline-offset-4 hover:decoration-primary">{r.label}</Link>
+                        ) : (
+                          <span className="font-semibold">{r.label}</span>
+                        )}
                         <div className="text-sm text-muted">{r.group}</div>
                       </td>
                       <td className="px-2 py-3 num">{r.score}</td>
@@ -186,18 +192,18 @@ function exportCsv(rows: LeaseItem[]) {
   URL.revokeObjectURL(url)
 }
 
-/** Sample pipeline: the good home roofs for the Innovation Park sample portfolio, with mixed outreach status. */
+/** Sample pipeline: the best roofs in City of Elmina for the Innovation Park sample portfolio, with mixed outreach status. */
 async function loadSample() {
-  const d = await loadJson<RoofsData>('roofs.json')
-  const roofs = d.sites.homes.zones
-    .flatMap((z) => z.roofs.map((r) => ({ r, z })))
-    .filter(({ r }) => r.score >= 75)
-    .sort((a, b) => b.r.score - a.r.score)
-  // deterministic mix: best roofs were approached first, so more of them have progressed
+  const [index, y] = await Promise.all([loadIndex(), loadJson<YieldData>('yield.json')])
+  const p = portfolioStore.get().find((x) => x.id === SAMPLE_PORTFOLIO_ID)
+  const elmina = index.townships.find((t) => t.id === 'elmina')!
+  const needed = (p && buildPlan(p, index, y, ['elmina'])?.roofsNeeded) || 60
+  const roofs = (await loadRoofs('elmina')).filter((r) => r.score >= GOOD_SCORE).sort((a, b) => b.score - a.score || b.kwp - a.kwp).slice(0, needed)
+  // deterministic mix: the best roofs were approached first, so more of them have progressed
   const status = (i: number): LeaseStatus => {
     const h = (i * 2654435761) % 100
-    if (i < 70) return h < 40 ? 'signed' : h < 62 ? 'interested' : h < 80 ? 'visited' : h < 90 ? 'declined' : 'to_approach'
+    if (i < needed * 0.45) return h < 40 ? 'signed' : h < 62 ? 'interested' : h < 80 ? 'visited' : h < 90 ? 'declined' : 'to_approach'
     return h < 10 ? 'visited' : 'to_approach'
   }
-  leasingStore.set(roofs.map(({ r, z }, i) => leaseItem(r, z, 'homes', SAMPLE_PORTFOLIO_ID, status(i))))
+  leasingStore.set(roofs.map((r, i) => leaseItemSat(r, elmina.name, SAMPLE_PORTFOLIO_ID, status(i))))
 }

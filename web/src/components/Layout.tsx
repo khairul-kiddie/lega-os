@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom'
+import { useJson } from '../lib/data'
+import type { TownshipIndex } from '../lib/townships'
 
 const NAV: { to: string; label: string; badge?: string }[] = [
   { to: '/map', label: 'Roof map' },
@@ -24,7 +26,11 @@ export function SunLogo({ className = 'h-7 w-7' }: { className?: string }) {
 function useContext(): [string, string] {
   const { pathname } = useLocation()
   const [params] = useSearchParams()
-  if (pathname.startsWith('/map')) return ['Site', params.get('site') === 'homes' ? 'City of Elmina homes' : 'Elmina Business Park']
+  const { data } = useJson<TownshipIndex>('townships/index.json')
+  if (pathname.startsWith('/map')) {
+    const t = data?.townships.find((x) => x.id === params.get('t')) ?? data?.townships[0]
+    return ['Township', t ? `${t.name}, ${t.state}` : '…']
+  }
   if (pathname.startsWith('/portfolio')) return ['Portfolio', 'All SDP townships']
   return ['Township', 'City of Elmina']
 }

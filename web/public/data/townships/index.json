@@ -1,0 +1,278 @@
+{
+ "sample": true,
+ "_note": "Footprints: Microsoft Global ML Building Footprints (ODbL). Yield: pvlib on NASA POWER per township. Shading, condition and owner attributes are SAMPLE data.",
+ "source": "Microsoft Global ML Building Footprints (Malaysia, 2026-02 release), ODbL",
+ "min_kwp": 3.0,
+ "townships": [
+  {
+   "id": "elmina",
+   "name": "City of Elmina",
+   "state": "Selangor",
+   "bbox": [
+    3.1603,
+    3.2135,
+    101.4925,
+    101.5289
+   ],
+   "extent": "osm",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 5401,
+    "solar_ready": 4697,
+    "good_roofs": 2344,
+    "avg_mwh_good": 37.89,
+    "mwh_yr": 170109.4,
+    "kwp": 140339.4,
+    "avg_score": 74.3,
+    "by_class": {
+     "house": 3103,
+     "terrace": 381,
+     "medium": 1127,
+     "large": 86
+    },
+    "yield_kwh_kwp": 1287.4,
+    "owners_for_1gwh": 29
+   }
+  },
+  {
+   "id": "elmina-bp",
+   "name": "Elmina Business Park",
+   "state": "Selangor",
+   "bbox": [
+    3.2212,
+    3.249,
+    101.5081,
+    101.5284
+   ],
+   "extent": "osm",
+   "master_plan": "elmina-business-park.jpg",
+   "summary": {
+    "buildings_detected": 296,
+    "solar_ready": 242,
+    "good_roofs": 127,
+    "avg_mwh_good": 41.82,
+    "mwh_yr": 10434.7,
+    "kwp": 8618.3,
+    "avg_score": 74.8,
+    "by_class": {
+     "house": 145,
+     "terrace": 22,
+     "medium": 71,
+     "large": 4
+    },
+    "yield_kwh_kwp": 1287.5,
+    "owners_for_1gwh": 40
+   }
+  },
+  {
+   "id": "bukit-raja",
+   "name": "Bandar Bukit Raja",
+   "state": "Selangor",
+   "bbox": [
+    3.076,
+    3.1116,
+    101.4121,
+    101.4687
+   ],
+   "extent": "osm",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 4518,
+    "solar_ready": 3864,
+    "good_roofs": 1985,
+    "avg_mwh_good": 124.76,
+    "mwh_yr": 399512.0,
+    "kwp": 325679.5,
+    "avg_score": 74.6,
+    "by_class": {
+     "house": 1249,
+     "terrace": 765,
+     "medium": 1344,
+     "large": 506
+    },
+    "yield_kwh_kwp": 1287.0,
+    "owners_for_1gwh": 5
+   }
+  },
+  {
+   "id": "serenia",
+   "name": "Serenia City",
+   "state": "Selangor",
+   "bbox": [
+    2.8415,
+    2.8615,
+    101.6946,
+    101.7117
+   ],
+   "extent": "osm",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 632,
+    "solar_ready": 494,
+    "good_roofs": 251,
+    "avg_mwh_good": 39.0,
+    "mwh_yr": 17230.4,
+    "kwp": 13834.2,
+    "avg_score": 74.4,
+    "by_class": {
+     "house": 351,
+     "terrace": 50,
+     "medium": 80,
+     "large": 13
+    },
+    "yield_kwh_kwp": 1319.8,
+    "owners_for_1gwh": 13
+   }
+  },
+  {
+   "id": "ara-damansara",
+   "name": "Ara Damansara",
+   "state": "Selangor",
+   "bbox": [
+    3.097,
+    3.119,
+    101.576,
+    101.598
+   ],
+   "extent": "approx",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 1423,
+    "solar_ready": 1259,
+    "good_roofs": 666,
+    "avg_mwh_good": 132.51,
+    "mwh_yr": 133684.6,
+    "kwp": 108013.9,
+    "avg_score": 75.0,
+    "by_class": {
+     "house": 548,
+     "terrace": 116,
+     "medium": 417,
+     "large": 178
+    },
+    "yield_kwh_kwp": 1291.1,
+    "owners_for_1gwh": 3
+   }
+  },
+  {
+   "id": "putra-heights",
+   "name": "Putra Heights",
+   "state": "Selangor",
+   "bbox": [
+    2.985,
+    3.007,
+    101.564,
+    101.586
+   ],
+   "extent": "approx",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 1876,
+    "solar_ready": 1566,
+    "good_roofs": 774,
+    "avg_mwh_good": 57.13,
+    "mwh_yr": 86502.9,
+    "kwp": 69533.8,
+    "avg_score": 74.1,
+    "by_class": {
+     "house": 814,
+     "terrace": 301,
+     "medium": 410,
+     "large": 41
+    },
+    "yield_kwh_kwp": 1320.2,
+    "owners_for_1gwh": 20
+   }
+  },
+  {
+   "id": "nilai-impian",
+   "name": "Nilai Impian",
+   "state": "Negeri Sembilan",
+   "bbox": [
+    2.831,
+    2.853,
+    101.797,
+    101.819
+   ],
+   "extent": "approx",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 1771,
+    "solar_ready": 1518,
+    "good_roofs": 775,
+    "avg_mwh_good": 72.73,
+    "mwh_yr": 90902.2,
+    "kwp": 72417.8,
+    "avg_score": 74.5,
+    "by_class": {
+     "house": 956,
+     "terrace": 154,
+     "medium": 336,
+     "large": 72
+    },
+    "yield_kwh_kwp": 1319.8,
+    "owners_for_1gwh": 1
+   }
+  },
+  {
+   "id": "ainsdale",
+   "name": "Bandar Ainsdale",
+   "state": "Negeri Sembilan",
+   "bbox": [
+    2.7201,
+    2.741,
+    101.8825,
+    101.8987
+   ],
+   "extent": "osm",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 390,
+    "solar_ready": 320,
+    "good_roofs": 170,
+    "avg_mwh_good": 97.35,
+    "mwh_yr": 28618.6,
+    "kwp": 22906.1,
+    "avg_score": 74.6,
+    "by_class": {
+     "house": 126,
+     "terrace": 52,
+     "medium": 107,
+     "large": 35
+    },
+    "yield_kwh_kwp": 1314.8,
+    "owners_for_1gwh": 4
+   }
+  },
+  {
+   "id": "pagoh",
+   "name": "Bandar Universiti Pagoh",
+   "state": "Johor",
+   "bbox": [
+    2.133,
+    2.1725,
+    102.7144,
+    102.7454
+   ],
+   "extent": "osm",
+   "master_plan": null,
+   "summary": {
+    "buildings_detected": 749,
+    "solar_ready": 628,
+    "good_roofs": 315,
+    "avg_mwh_good": 77.13,
+    "mwh_yr": 40639.6,
+    "kwp": 33363.5,
+    "avg_score": 74.1,
+    "by_class": {
+     "house": 328,
+     "terrace": 78,
+     "medium": 176,
+     "large": 46
+    },
+    "yield_kwh_kwp": 1284.0,
+    "owners_for_1gwh": 9
+   }
+  }
+ ]
+}

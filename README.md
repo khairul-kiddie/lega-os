@@ -10,13 +10,13 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 2. **Which group of roofs covers a buyer's demand?** The portfolio builder sizes it, with a buffer for owners who back out.
 3. **How much can SDP safely promise each day?** A 14-day forecast with a P90 "safe to promise" amount, backtested on years the model never saw.
 
-![Roof map](docs/screenshots/1-roof-map.jpg)
+![Roof map: real rooftops on satellite imagery](docs/screenshots/1-roof-map.png)
 
 | | |
 |---|---|
-| ![Zone view](docs/screenshots/2-zone.jpg) | ![Portfolio plan](docs/screenshots/3-portfolio-plan.jpg) |
+| ![Township scan](docs/screenshots/2-township-scan.png) | ![Portfolio plan](docs/screenshots/3-portfolio-plan.jpg) |
 | ![Forecast backtest](docs/screenshots/4-forecast-backtest.jpg) | ![Firming forecast](docs/screenshots/5-firming.jpg) |
-| ![Leasing list](docs/screenshots/6-leasing.jpg) | ![Roof scoring model](docs/screenshots/7-roof-model.jpg) |
+| ![Leasing list](docs/screenshots/6-leasing.jpg) | ![Roof scoring model](docs/screenshots/7-roof-model.png) |
 
 ---
 
@@ -28,17 +28,54 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Solar yield per kWp, monthly profile | **Real (simulated)** | pvlib PVWatts model run on NASA POWER data |
 | Archived weather forecasts 2017–2025 | **Real** | [Open-Meteo](https://open-meteo.com/) Historical Forecast API and Previous Runs API |
 | Forecast model, backtest, live 14-day forecast | **Real** | LightGBM quantile models, Open-Meteo forecast API |
-| Zone outlines on the master plan | Hand-placed | `pipeline/data/zones.json` on the SDP master plan image |
-| Roof area, shading, roof condition, owner type, likelihood to sign | **Sample** | Generated with a fixed seed (`"sample": true` in `roofs.json`) |
-| Zone average scores | **Sample** | Roofs are calibrated so each zone's average matches `zones.json` |
+| Roof outlines and roof areas in 9 SDP townships (17,000+ buildings) | **Real** | [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints), Malaysia, 2026-02 release (ODbL) |
+| Satellite imagery under the roofs | **Real** | Esri World Imagery tiles (with attribution) |
+| Township extents | Real / approximate | OpenStreetMap boundaries via Nominatim. Ara Damansara, Putra Heights and Nilai Impian use a ~2.4 km box around the geocoded centre |
+| Yield per township | **Real (simulated)** | pvlib on each township's own NASA POWER cell (1,284–1,320 kWh/kWp/yr) |
+| Roof type (house / terrace row / mid-size / factory), usable panel area | Estimated | Size-and-shape rule on the real footprint |
+| Shading, roof condition, owner type, likelihood to sign | **Sample** | Fixed seed per roof. The footprints have no building heights, so shading can't be computed yet |
+| Elmina Business Park master-plan zones | Hand-placed + **sample** | `pipeline/data/zones.json` on the SDP master plan; planned buildings not yet in the imagery |
 | Buyers: Innovation Park (1,800 MWh/yr, office hours), Elmina Lakeside Mall (2,400 MWh/yr, mall hours) | **Sample** | Example buyers, not real contracts |
-| Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit from the good home roofs; editable |
+| Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit with the best City of Elmina roofs for the Innovation Park plan; editable |
 | Roof facing, usable panel area, sun lost to shade | **Sample** | Derived from the synthetic roof attributes |
 | Usage pattern shares (office 95%, mall 70%, 24h 45%) | Placeholder | Replace with metered load profiles |
-| Scans of other townships (Bukit Raja, Serenia City, …) | **Sample** | Deterministic simulated scan |
 | Resident app mock (lease income, panel status, street card) | Placeholder | Shown as `[X]`; its 7-day bars scale the live forecast to a 5.3 kWp home |
 
 Every screen that shows sample numbers carries a "sample data" note.
+
+## Township scan
+
+On the Roof map, pick any of nine SDP townships and press **Scan**:
+- City of Elmina, Elmina Business Park, Bandar Bukit Raja, Serenia City, Ara Damansara, Putra Heights (Selangor)
+- Nilai Impian, Bandar Ainsdale (Negeri Sembilan)
+- Bandar Universiti Pagoh (Johor)
+
+The scan sweeps the satellite view and reveals every building found there. Each building gets:
+- its roof area (from the real footprint)
+- a usable panel area and kWp
+- yield simulated on that township's own NASA POWER weather
+- a score
+
+Roofs under 3 kWp are dropped as not worth a lease.
+
+The work is precomputed by `python -m lega.townships`; the animation replays it, so the demo works offline. In production the same steps would run on demand, with fresh imagery, a roof-segmentation model and LiDAR for shading.
+
+| Township | Buildings detected | Solar-ready roofs | Good roofs (75+) | Potential, GWh/yr |
+|---|---|---|---|---|
+| City of Elmina | 5,401 | 4,697 | 2,344 | 170.1 |
+| Elmina Business Park | 296 | 242 | 127 | 10.4 |
+| Bandar Bukit Raja | 4,518 | 3,864 | 1,985 | 399.5 |
+| Serenia City | 632 | 494 | 251 | 17.2 |
+| Ara Damansara | 1,423 | 1,259 | 666 | 133.7 |
+| Putra Heights | 1,876 | 1,566 | 774 | 86.5 |
+| Nilai Impian | 1,771 | 1,518 | 775 | 90.9 |
+| Bandar Ainsdale | 390 | 320 | 170 | 28.6 |
+| Bandar Universiti Pagoh | 749 | 628 | 315 | 40.6 |
+
+**Caveats:**
+- The footprints reflect the age of the satellite imagery, so recent construction may be missing. For example, Elmina Business Park shows 296 buildings, while its master plan has many more planned. The app keeps the master plan as a second view for that township.
+- Potential assumes every solar-ready roof is leased.
+- Factory roofs dominate the totals. Bukit Raja's largest warehouse roof alone is about 46,000 m².
 
 ## Results
 
@@ -80,7 +117,8 @@ lega-os/
     lega/config.py          site coordinates and system settings (single source of truth)
     lega/nasa_power.py      NASA POWER daily download (cached in data/raw/)
     lega/simulate.py        pvlib yield simulation → yield.json
-    lega/roofs.py           roof generation and scoring → roofs.json (sample data)
+    lega/townships.py       township scans: footprints → solar-ready roofs → townships/*.json
+    lega/roofs.py           master-plan zone roofs for Elmina Business Park → roofs.json (sample)
     lega/forecast.py        LightGBM quantile models and backtest → forecast_backtest.json
     lega/live.py            Open-Meteo 16-day forecast → forecast_live.json (cached fallback)
     lega/formulas.py        portfolio formulas (Python reference)
@@ -90,7 +128,8 @@ lega-os/
   shared/formula_cases.json shared test cases for the Python and TypeScript formulas
   web/                      React + TypeScript + Vite + Tailwind static site
     src/lib/formulas.ts     the same formulas in TypeScript (vitest against the shared cases)
-    public/data/            JSON from the pipeline (≈ 270 KB in total)
+    public/data/            JSON from the pipeline: ≈ 400 KB core + 3.7 MB of township scans,
+                            each township loaded only when it is opened (≈ 0.1–1.2 MB, gzip ≈ 25%)
 ```
 
 - **Heavy work runs offline.** The web app is a static site, so there is no server to fail during judging.
@@ -151,6 +190,7 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
   - a nightly forecast run (Open-Meteo commercial plan or a national weather feed)
   - weekly retraining on metered inverter output, once installations are live
   - recalibrating P90 on day-ahead data
+- **Live scans:** run detection on the latest imagery for any township polygon, instead of the precomputed footprints.
 - **CRM integration:** the leasing list feeds real outreach results back in, so likelihood-to-sign can be refitted as a model.
 
 ## Data sources and licences
@@ -158,6 +198,9 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
 - **NASA POWER:** Prediction Of Worldwide Energy Resources, NASA Langley Research Center. Free and open.
 - **Open-Meteo:** forecast, Historical Forecast and Previous Runs APIs. Free for non-commercial use under CC BY 4.0. **A commercial deployment needs a paid Open-Meteo plan.**
 - **pvlib:** open-source PV modelling library (BSD-3).
+- **Microsoft Global ML Building Footprints:** Open Database License (ODbL). The derived township files keep that licence.
+- **Esri World Imagery:** © Esri, Maxar, Earthstar Geographics. Tiles are used with attribution for this non-commercial prototype; a commercial deployment needs an Esri (ArcGIS) licence or another imagery provider.
+- **OpenStreetMap / Nominatim:** township extents and place labels, © OpenStreetMap contributors (ODbL).
 - **Base map:** Elmina Business Park master plan, © Sime Darby Property. Used for the hackathon prototype only.
 
 No API keys are used or stored in this repository.

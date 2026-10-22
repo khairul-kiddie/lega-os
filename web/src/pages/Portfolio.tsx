@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Route, Routes, useNavigate, useParams } from 'react-router-dom'
-import { PageHeader, SampleNote } from '../components/ui'
+import { PageHeader } from '../components/ui'
 import { fmt, useJson } from '../lib/data'
-import type { RoofsData, YieldData } from '../lib/data'
+import type { YieldData } from '../lib/data'
+import { loadRoofs, markScanned, scannedStore, type TownshipIndex } from '../lib/townships'
 import type { Pattern, Safety, Unit } from '../lib/formulas'
 import {
   BUYER_LOCATIONS,
@@ -14,13 +15,11 @@ import {
   requirement,
   SAFETY_INFO,
   STATUS_LABEL,
-  simulateScan,
-  TOWNSHIPS,
   townshipStats,
   type Plan,
   type Portfolio as P,
 } from '../lib/portfolio'
-import { leaseItem, leasingStore, shortlistStore, useStore, type LeaseItem } from '../lib/store'
+import { leaseItemSat, leasingStore, shortlistStore, useStore, type LeaseItem } from '../lib/store'
 
 export default function Portfolio() {
   return (
@@ -70,8 +69,9 @@ const STATUS_CLS: Record<P['status'], string> = {
 
 function List() {
   const all = useStore(portfolioStore)
-  const { data } = useJson<RoofsData>('roofs.json')
+  const { data } = useJson<TownshipIndex>('townships/index.json')
   const { data: y } = useJson<YieldData>('yield.json')
+  const scanned = useStore(scannedStore)
   const navigate = useNavigate()
 
   const create = () => {
@@ -105,7 +105,7 @@ function List() {
               <tr><td colSpan={6} className="px-6 py-10 text-center text-muted">No portfolios yet. Start with “+ New portfolio”.</td></tr>
             )}
             {all.map((p) => {
-              const plan = data && y && p.demand > 0 ? buildPlan(p, data, y) : null
+              const plan = data && y && p.demand > 0 ? buildPlan(p, data, y, scanned) : null
               return (
                 <tr key={p.id} className="border-b border-line last:border-0">
                   <td className="px-6 py-4">
@@ -230,13 +230,14 @@ function Details() {
 
 function RequirementStep() {
   const [p] = usePortfolio()
-  const { data } = useJson<RoofsData>('roofs.json')
+  const { data } = useJson<TownshipIndex>('townships/index.json')
   const [shown, setShown] = useState(false)
   if (!p) return <NotFound />
   const req = requirement(p)
-  const bp = data ? townshipStats(data, TOWNSHIPS[0], {}) : null
-  const kwpPerRoof = 120 // typical factory system in the scanned zones, for the kWp estimate
-  const siteYield = data?.site_yield_kwh_kwp ?? 1287
+  const first = data?.townships.find((t) => t.id === (p.townships[0] ?? 'elmina'))
+  const bp = first ? { avgMwh: first.summary.avg_mwh_good } : null
+  const kwpPerRoof = 120
+  const siteYield = first?.summary.yield_kwh_kwp ?? 1287
 
   return (
     <>
@@ -258,7 +259,7 @@ function RequirementStep() {
               <Stat
                 label="Roofs, before buffer"
                 value={bp ? `≈ ${fmt(Math.ceil(req.solarNeed / bp.avgMwh))}` : '…'}
-                sub={bp ? `good roofs in Elmina Business Park avg ${fmt(bp.avgMwh)} MWh/yr` : `≈ ${kwpPerRoof} kWp each`}
+                sub={bp && first ? `good roofs in ${first.name} avg ${fmt(bp.avgMwh, 1)} MWh/yr` : `≈ ${kwpPerRoof} kWp each`}
               />
             </dl>
             {p.pattern !== 'office' && (
@@ -292,15 +293,16 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 function PlanStep() {
   const [p, update] = usePortfolio()
-  const { data } = useJson<RoofsData>('roofs.json')
+  const { data } = useJson<TownshipIndex>('townships/index.json')
   const { data: y } = useJson<YieldData>('yield.json')
+  const scanned = useStore(scannedStore)
   const [query, setQuery] = useState('')
   const [scanning, setScanning] = useState<string | null>(null)
   const [sent, setSent] = useState<number | null>(null)
   const leasing = useStore(leasingStore)
   const shortlist = useStore(shortlistStore)
 
-  const plan = useMemo(() => (p && data && y ? buildPlan(p, data, y) : null), [p, data, y])
+  const plan = useMemo(() => (p && data && y ? buildPlan(p, data, y, scanned) : null), [p, data, y, scanned])
   const isDraft = p?.status === 'Draft'
   useEffect(() => {
     if (plan && isDraft) update({ status: 'Plan ready' })
@@ -313,50 +315,39 @@ function PlanStep() {
     update({ townships: p.townships.includes(id) ? p.townships.filter((t) => t !== id) : [...p.townships, id] })
   const scan = (id: string) => {
     setScanning(id)
-    window.setTimeout(() => {
-      const t = TOWNSHIPS.find((x) => x.id === id)!
-      update({ scans: { ...p.scans, [id]: simulateScan(t, data.site_yield_kwh_kwp) }, townships: [...new Set([...p.townships, id])] })
-      setScanning(null)
-    }, 1400)
+    // same precomputed scan the Roof map runs; here we only need its totals
+    loadRoofs(id).then(() =>
+      window.setTimeout(() => {
+        markScanned(id)
+        update({ townships: [...new Set([...p.townships, id])] })
+        setScanning(null)
+      }, 1200),
+    )
   }
 
-  const send = () => {
+  const send = async () => {
     if (!plan) return
     const have = new Set(leasing.map((l) => l.roofId))
     const items: LeaseItem[] = []
     for (const a of plan.allocation) {
-      if (a.township.site) {
-        const site = a.township.site
-        const good = data.sites[site].zones
-          .flatMap((z) => z.roofs.map((r) => ({ r, z })))
-          .filter(({ r }) => r.score >= GOOD_SCORE)
-          // hand-picked roofs from the map go first, then best score
-          .sort((x, y2) => Number(shortlist.includes(y2.r.id)) - Number(shortlist.includes(x.r.id)) || y2.r.score - x.r.score)
-          .slice(0, a.roofs)
-        for (const { r, z } of good) if (!have.has(r.id)) items.push(leaseItem(r, z, site, p.id))
-      } else {
-        const prefix = a.township.id.slice(0, 3).toUpperCase()
-        for (let i = 0; i < a.roofs; i++) {
-          const id = `${prefix}-${String(i + 1).padStart(3, '0')}`
-          if (!have.has(id))
-            items.push({
-              roofId: id, label: id, group: `${a.township.name} (simulated)`, site: a.township.id,
-              score: 92 - Math.floor((i * 17) / Math.max(a.roofs, 1)), mwh_yr: a.stats.avgMwh,
-              headline: 'Simulated scan — owner details pending', status: 'to_approach', addedAt: new Date().toISOString(), portfolioId: p.id,
-            })
-        }
-      }
+      const roofs = await loadRoofs(a.township.id)
+      const good = roofs
+        .filter((r) => r.score >= GOOD_SCORE)
+        // hand-picked roofs from the map go first, then best score
+        .sort((x, y2) => Number(shortlist.includes(y2.id)) - Number(shortlist.includes(x.id)) || y2.score - x.score || y2.kwp - x.kwp)
+        .slice(0, a.roofs)
+      for (const r of good) if (!have.has(r.id)) items.push(leaseItemSat(r, a.township.name, p.id))
     }
     leasingStore.set((l) => [...l, ...items])
     update({ status: 'Sent to leasing' })
     setSent(items.length)
   }
 
-  const shown = TOWNSHIPS.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
+  const shown = data.townships.filter((t) => `${t.name} ${t.state}`.toLowerCase().includes(query.toLowerCase()))
 
   return (
     <>
-      <PageHeader title="Roofs & plan" right={<SampleNote>Roof scores and scans of other townships are sample data.</SampleNote>} />
+      <PageHeader title="Roofs & plan" subtitle="Roof outlines and yield are real (satellite footprints, NASA POWER); roof scores are sample data" />
       <Stepper step={2} />
 
       <div className="card mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 p-4 text-sm">
@@ -375,7 +366,7 @@ function PlanStep() {
             <input id="town-q" className="input mt-3" placeholder="Search townships" value={query} onChange={(e) => setQuery(e.target.value)} />
             <ul className="mt-3 space-y-1">
               {shown.map((t) => {
-                const st = townshipStats(data, t, p.scans)
+                const st = townshipStats(t, scanned)
                 return (
                   <li key={t.id} className="flex min-h-touch items-center gap-3 rounded-lg px-2 hover:bg-page">
                     {st ? (
@@ -384,7 +375,7 @@ function PlanStep() {
                         <label htmlFor={`t-${t.id}`} className="flex-1 cursor-pointer py-2 text-sm">
                           {t.name}
                           <span className="block text-xs text-muted">
-                            <span className="num">{fmt(st.good)}</span> good roofs · {fmt(st.avgMwh, 1)} MWh/yr each{st.simulated ? ' · simulated scan' : ''}
+                            <span className="num">{fmt(st.good)}</span> good roofs · {fmt(st.avgMwh, 1)} MWh/yr each · {t.state}
                           </span>
                         </label>
                       </>
@@ -481,7 +472,7 @@ function PlanPanel({ p, plan, y, onSend, sent }: { p: P; plan: Plan; y: YieldDat
         {plan.allocation.map((a) => (
           <li key={a.township.id}>
             <div className="flex justify-between text-sm">
-              <span>{a.township.name}{a.stats.simulated && <span className="text-xs text-muted"> · simulated</span>}</span>
+              <span>{a.township.name}</span>
               <span className="num">{fmt(a.roofs)} <span className="text-muted">/ {fmt(a.stats.good)} good</span></span>
             </div>
             <div className="mt-1 h-2.5 rounded-full bg-page">

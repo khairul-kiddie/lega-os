@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { Roof, Zone } from './data'
+import type { SatRoof } from './townships'
 
 // Tiny localStorage-backed stores. Every storage access is wrapped: private windows
 // and blocked storage must not break the app — state then just lives in memory.
@@ -67,6 +68,13 @@ export function leaseItem(roof: Roof, zone: Zone, site: string, portfolioId?: st
   }
 }
 
+export function leaseItemSat(roof: SatRoof, townshipName: string, portfolioId?: string, status: LeaseStatus = 'to_approach'): LeaseItem {
+  return {
+    roofId: roof.id, label: roof.label, group: townshipName, site: roof.township, score: roof.score, mwh_yr: roof.mwh_yr,
+    headline: roof.headline, status, addedAt: new Date().toISOString(), portfolioId,
+  }
+}
+
 // v2: roof ids changed (unique lot numbers for homes)
-export const leasingStore = createStore<LeaseItem[]>('lega.leasing.v2', [])
+export const leasingStore = createStore<LeaseItem[]>('lega.leasing.v3', [])
 export const shortlistStore = createStore<string[]>('lega.shortlist.v2', [])
