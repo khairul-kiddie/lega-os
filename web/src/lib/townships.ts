@@ -25,12 +25,17 @@ export interface TownshipMeta {
   bbox: [number, number, number, number]
   extent: 'osm' | 'approx'
   master_plan: string | null
+  /** Township this site belongs to on the Roof map (Elmina Business Park → City of Elmina). */
+  parent?: string | null
+  /** Label in the Business park | Homes toggle. */
+  site?: string | null
   summary: TownshipSummary
 }
 
 export interface TownshipIndex {
   sample: true
   source: string
+  list_note: string
   min_kwp: number
   townships: TownshipMeta[]
 }
@@ -123,7 +128,37 @@ export function loadRoofs(id: string): Promise<SatRoof[]> {
   return decoded.get(id)!
 }
 
+/** A township on the Roof map: one pin, one or more scanned sites (homes, business park). */
+export interface TownshipGroup {
+  id: string
+  name: string
+  state: string
+  /** pin position [lat, lng] */
+  center: [number, number]
+  sites: TownshipMeta[]
+  buildings: number
+  solarReady: number
+  good: number
+  mwh: number
+}
+
+export function townshipGroups(index: TownshipIndex): TownshipGroup[] {
+  return index.townships
+    .filter((t) => !t.parent)
+    .map((t) => {
+      const sites = [t, ...index.townships.filter((x) => x.parent === t.id)]
+      const sum = (f: (m: TownshipMeta) => number) => sites.reduce((a, m) => a + f(m), 0)
+      const [s, n, w, e] = t.bbox
+      return {
+        id: t.id, name: t.name, state: t.state, center: [(s + n) / 2, (w + e) / 2], sites,
+        buildings: sum((m) => m.summary.buildings_detected), solarReady: sum((m) => m.summary.solar_ready),
+        good: sum((m) => m.summary.good_roofs), mwh: sum((m) => m.summary.mwh_yr),
+      }
+    })
+}
+
 /** Townships this browser has scanned. Two are pre-scanned so the map is never empty on first load. */
 export const scannedStore = createStore<string[]>('lega.scanned.v1', ['elmina', 'elmina-bp'])
 
-export const markScanned = (id: string) => scannedStore.set((s) => (s.includes(id) ? s : [...s, id]))
+export const markScanned = (...ids: string[]) => scannedStore.set((s) => [...s, ...ids.filter((id) => !s.includes(id))])
+export const groupScanned = (g: TownshipGroup, scanned: string[]) => g.sites.every((m) => scanned.includes(m.id))

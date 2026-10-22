@@ -28,8 +28,8 @@ function useContext(): [string, string] {
   const [params] = useSearchParams()
   const { data } = useJson<TownshipIndex>('townships/index.json')
   if (pathname.startsWith('/map')) {
-    const t = data?.townships.find((x) => x.id === params.get('t')) ?? data?.townships[0]
-    return ['Township', t ? `${t.name}, ${t.state}` : '…']
+    const t = data?.townships.find((x) => x.id === params.get('t'))
+    return t ? ['Township', `${t.name}, ${t.state}`] : ['Roof map', 'All SDP townships']
   }
   if (pathname.startsWith('/portfolio')) return ['Portfolio', 'All SDP townships']
   return ['Township', 'City of Elmina']

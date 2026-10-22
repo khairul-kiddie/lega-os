@@ -31,3 +31,11 @@ def test_polygons_decode_near_their_centroid(meta):
         lons = [ox + p[k] / 10 / d["kx"] for k in range(0, len(p), 2)]
         assert min(lats) - 1e-4 <= d["cy"][i] <= max(lats) + 1e-4
         assert min(lons) - 1e-4 <= d["cx"][i] <= max(lons) + 1e-4
+
+
+def test_sites_group_under_an_existing_township():
+    ids = {m["id"] for m in INDEX["townships"]}
+    for m in INDEX["townships"]:
+        if m.get("parent"):
+            assert m["parent"] in ids and m["parent"] != m["id"]
+            assert m.get("site"), "a grouped site needs a toggle label"

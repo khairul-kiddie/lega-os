@@ -10,11 +10,11 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 2. **Which group of roofs covers a buyer's demand?** The portfolio builder sizes it, with a buffer for owners who back out.
 3. **How much can SDP safely promise each day?** A 14-day forecast with a P90 "safe to promise" amount, backtested on years the model never saw.
 
-![Roof map: real rooftops on satellite imagery](docs/screenshots/1-roof-map.png)
+![Roof map: all SDP townships](docs/screenshots/1-roof-map.jpg)
 
 | | |
 |---|---|
-| ![Township scan](docs/screenshots/2-township-scan.png) | ![Portfolio plan](docs/screenshots/3-portfolio-plan.jpg) |
+| ![Township scan](docs/screenshots/2-township-scan.jpg) | ![Portfolio plan](docs/screenshots/3-portfolio-plan.jpg) |
 | ![Forecast backtest](docs/screenshots/4-forecast-backtest.jpg) | ![Firming forecast](docs/screenshots/5-firming.jpg) |
 | ![Leasing list](docs/screenshots/6-leasing.jpg) | ![Roof scoring model](docs/screenshots/7-roof-model.png) |
 
@@ -43,14 +43,33 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 
 Every screen that shows sample numbers carries a "sample data" note.
 
-## Township scan
+## Roof map and township scan
 
-On the Roof map, pick any of nine SDP townships and press **Scan**:
-- City of Elmina, Elmina Business Park, Bandar Bukit Raja, Serenia City, Ara Damansara, Putra Heights (Selangor)
+The Roof map has three levels:
+
+1. **All townships** (the default view): one numbered pin per SDP township, green once scanned and dashed white before. Beside the map:
+   - the selected township, with **Open results** / **Re-scan**, or its expected building count and **Scan**
+   - the list of all townships
+   - a **Scan any other area** box, which validates its input; custom areas are a roadmap stub
+2. **One township**: every roof on satellite imagery, coloured by score. City of Elmina has a **Business park | Homes** toggle. Business park opens on the SDP master plan, with the satellite scan as a second view.
+3. **One master-plan zone** (Elmina Business Park): roof tiles, the cropped master plan, and the roof panel.
+
+The township list is in `pipeline/lega/townships.py` (`TOWNSHIPS`). Locations come from OpenStreetMap and should be **confirmed against SDP's official township list**:
+- City of Elmina (homes + Elmina Business Park), Bandar Bukit Raja, Serenia City, Ara Damansara, Putra Heights (Selangor)
 - Nilai Impian, Bandar Ainsdale (Negeri Sembilan)
 - Bandar Universiti Pagoh (Johor)
 
-The scan sweeps the satellite view and reveals every building found there. Each building gets:
+**Scan** opens a progress view that replays the township's precomputed scan in about 6 seconds, and the screen says so. Imagery tiles load, building outlines appear in white, then a second pass colours them by score. Five steps show live counters and their data source:
+
+| Step | Production source | Prototype |
+|---|---|---|
+| Fetch imagery | Sentinel-2 + high-res tiles, or an SDP drone survey | Esri World Imagery |
+| Detect buildings | GeoAI segmentation, checked against Microsoft and Google open building footprints | Microsoft footprints |
+| Estimate heights and shading | Google Open Buildings 2.5D + sun path | Sample shading |
+| Simulate yield | pvlib + NASA POWER | Same (real) |
+| Score every roof | 40/20/20/20 formula | Same |
+
+When it finishes, a summary card offers **View results**, which opens that township (level 2). Each building gets:
 - its roof area (from the real footprint)
 - a usable panel area and kWp
 - yield simulated on that township's own NASA POWER weather
@@ -73,7 +92,7 @@ The work is precomputed by `python -m lega.townships`; the animation replays it,
 | Bandar Universiti Pagoh | 749 | 628 | 315 | 40.6 |
 
 **Caveats:**
-- The footprints reflect the age of the satellite imagery, so recent construction may be missing. For example, Elmina Business Park shows 296 buildings, while its master plan has many more planned. The app keeps the master plan as a second view for that township.
+- The footprints reflect the age of the satellite imagery, so recent construction may be missing. For example, Elmina Business Park shows 296 buildings, while its master plan has many more planned. That is why its site opens on the master plan.
 - Potential assumes every solar-ready roof is leased.
 - Factory roofs dominate the totals. Bukit Raja's largest warehouse roof alone is about 46,000 m².
 

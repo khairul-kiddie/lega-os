@@ -1,16 +1,16 @@
 # LEGA OS — 5-minute demo script
 
 **Before recording**
-- Open https://khairul-kiddie.github.io/lega-os/ in a fresh private window. City of Elmina and Elmina Business Park are already scanned; the other townships are not, so you can scan one live.
+- Open https://khairul-kiddie.github.io/lega-os/ in a fresh private window. City of Elmina is already scanned; the other seven townships are not, so you can scan one live.
 - Use a window about 1440 px wide, with browser zoom at 100%.
 - Keep this script open on a second screen.
 
 | Time | Screen | Click path | Say |
 |---|---|---|---|
-| 0:00–0:35 | **Roof map**, City of Elmina | Land on the page. Zoom into the map a few clicks. | "SDP wants to lease rooftops across its townships and sell the power to nearby businesses. LEGA OS answers three questions: which roofs, how many, and how much can we safely promise. This is City of Elmina on real satellite imagery. Every coloured shape is a real building found by Microsoft's open building-footprint data: 5,401 buildings, 4,697 big enough for solar, about 170 GWh a year." |
-| 0:35–1:15 | **Scan a new township** | In **Township**, choose *Serenia City*, then press **Scan Serenia City**. | "Any SDP township works the same way. We scan it, the roofs appear, and each one is measured, simulated on that township's own NASA weather, and scored." When it finishes, choose *Bandar Bukit Raja* and scan it: "In Bukit Raja just 5 big factory roofs would give a gigawatt-hour." |
-| 1:15–1:40 | **One roof** | Click **Factories**, then the top roof in *Best roofs to start with*. | "The map flies to the roof. 2,759 m², 276 kWp, 354 MWh a year. Size and yield are real. Shading and owner data are sample data for now, and the panel says so." |
-| 1:40–1:55 | **Master plan** | Township → *Elmina Business Park*, then **Master plan**. | "Satellite imagery shows what's built today. For new townships we also have SDP's master plan, so we can plan roofs that don't exist yet." |
+| 0:00–0:30 | **Roof map**, all townships | Land on the page. Point at the pins. | "SDP wants to lease rooftops across its townships and sell the power to nearby businesses. LEGA OS answers three questions: which roofs, how many, and how much can we safely promise. Here are SDP's townships. Green means scanned, dashed means not yet. City of Elmina is done: 4,939 roofs scored, about 180 GWh a year." |
+| 0:30–1:10 | **Scan a township** | Click **Bandar Bukit Raja** in the list, then **Scan Bandar Bukit Raja**. | "Scanning works in five steps: fetch imagery, detect buildings, estimate shading, simulate yield on Bukit Raja's own NASA weather, score every roof. In production this runs on fresh imagery; here we replay a precomputed scan." When it finishes: "4,518 buildings, 1,985 good roofs, about 400 GWh a year." Click **View results**. |
+| 1:10–1:35 | **One roof** | Click **Factories**, then the top roof in *Best roofs to start with*. | "The map flies to the roof. Size and yield are real. Shading and owner data are sample data for now, and the panel says so. Just 5 big factory roofs here would give a gigawatt-hour." |
+| 1:35–1:55 | **City of Elmina: Business park \| Homes** | **← All townships**, click **City of Elmina**, then **Open results**. Click zone **i41**. | "City of Elmina has two sites. The business park opens on SDP's master plan, so we can plan roofs that aren't built yet. Here's one zone, roof by roof." Then switch to **Homes**: "and the homes, on satellite imagery." |
 | 1:55–2:45 | **Portfolio builder** | **Portfolio builder**, then **Open plan** on *Innovation Park, Elmina*. Click **Monsoon-proof**. | "Innovation Park needs 1,800 MWh a year in office hours. From City of Elmina's good roofs we sign up 53, with a 15% buffer. Every month is covered. If one owner in five says no, the worst month drops to 88%, so for a monsoon-proof plan we sign a few more." Tick **Bandar Bukit Raja** to show the plan rebalancing. |
 | 2:45–3:10 | **Leasing list** | **Leasing list**. Click a roof name. | "The outreach team gets every roof ranked: why it ranks there, its status, and the next step. **Export for field team** gives them a spreadsheet. Clicking a roof shows it on the satellite map." |
 | 3:10–3:40 | **Model insights → Roof scoring model** | Opens on **Best home**. Click **Best factory**. | "Each score comes from four steps. The roof outline and yield are real; the outline here is the factory's actual footprint. Shading and owner likelihood are sample data until we have LiDAR and lease records." |
@@ -22,3 +22,4 @@
 - The township data ships with the site. Only the satellite tiles come from Esri, so record on a good connection.
 - If the live forecast is out of date, the Firming screen shows a "stale" banner and the last cached forecast.
 - To reset the demo (scans, portfolios, leasing list), clear the site's storage in the browser and reload.
+- The scan replay takes about 6 seconds; don't click away mid-scan or that township won't be marked as scanned.

@@ -2,6 +2,7 @@
  "sample": true,
  "_note": "Footprints: Microsoft Global ML Building Footprints (ODbL). Yield: pvlib on NASA POWER per township. Shading, condition and owner attributes are SAMPLE data.",
  "source": "Microsoft Global ML Building Footprints (Malaysia, 2026-02 release), ODbL",
+ "list_note": "Township list and locations are approximate (OpenStreetMap); confirm against SDP's official township list.",
  "min_kwp": 3.0,
  "townships": [
   {
@@ -16,6 +17,8 @@
    ],
    "extent": "osm",
    "master_plan": null,
+   "parent": null,
+   "site": "Homes",
    "summary": {
     "buildings_detected": 5401,
     "solar_ready": 4697,
@@ -46,6 +49,8 @@
    ],
    "extent": "osm",
    "master_plan": "elmina-business-park.jpg",
+   "parent": "elmina",
+   "site": "Business park",
    "summary": {
     "buildings_detected": 296,
     "solar_ready": 242,
@@ -76,6 +81,8 @@
    ],
    "extent": "osm",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 4518,
     "solar_ready": 3864,
@@ -106,6 +113,8 @@
    ],
    "extent": "osm",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 632,
     "solar_ready": 494,
@@ -136,6 +145,8 @@
    ],
    "extent": "approx",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 1423,
     "solar_ready": 1259,
@@ -166,6 +177,8 @@
    ],
    "extent": "approx",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 1876,
     "solar_ready": 1566,
@@ -196,6 +209,8 @@
    ],
    "extent": "approx",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 1771,
     "solar_ready": 1518,
@@ -226,6 +241,8 @@
    ],
    "extent": "osm",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 390,
     "solar_ready": 320,
@@ -256,6 +273,8 @@
    ],
    "extent": "osm",
    "master_plan": null,
+   "parent": null,
+   "site": null,
    "summary": {
     "buildings_detected": 749,
     "solar_ready": 628,

@@ -28,12 +28,16 @@ FOOTPRINTS = RAW / "footprints"
 OUT = WEB_DATA / "townships"
 M_PER_DEG_LAT = 110_574
 
+# Township list and locations: confirm against SDP's official township list before relying on it.
+# "parent" groups a site under a township on the Roof map (Elmina Business Park is part of City of Elmina);
+# "site" names that site in the Business park | Homes toggle.
 # Extents: OpenStreetMap (Nominatim) boundaries where the township is mapped as an area,
 # otherwise a ~2.4 km box around the geocoded centre ("approx").
 TOWNSHIPS = [
-    {"id": "elmina", "name": "City of Elmina", "state": "Selangor", "bbox": [3.1603, 3.2135, 101.4925, 101.5289], "extent": "osm", "tile": "132232022"},
+    {"id": "elmina", "name": "City of Elmina", "state": "Selangor", "bbox": [3.1603, 3.2135, 101.4925, 101.5289], "extent": "osm", "tile": "132232022",
+     "site": "Homes"},
     {"id": "elmina-bp", "name": "Elmina Business Park", "state": "Selangor", "bbox": [3.2212, 3.2490, 101.5081, 101.5284], "extent": "osm", "tile": "132232022",
-     "master_plan": "elmina-business-park.jpg"},
+     "master_plan": "elmina-business-park.jpg", "parent": "elmina", "site": "Business park"},
     {"id": "bukit-raja", "name": "Bandar Bukit Raja", "state": "Selangor", "bbox": [3.0760, 3.1116, 101.4121, 101.4687], "extent": "osm", "tile": "132232022"},
     {"id": "serenia", "name": "Serenia City", "state": "Selangor", "bbox": [2.8415, 2.8615, 101.6946, 101.7117], "extent": "osm", "tile": "132232022"},
     {"id": "ara-damansara", "name": "Ara Damansara", "state": "Selangor", "bbox": [3.0970, 3.1190, 101.5760, 101.5980], "extent": "approx", "tile": "132232022"},
@@ -201,7 +205,7 @@ def scan(t: dict) -> dict:
         "yield_kwh_kwp": round(site_yield, 1),
         "owners_for_1gwh": int(np.searchsorted(np.cumsum(mwh[np.argsort(-scores)]), 1000) + 1) if mwh.sum() >= 1000 else None,
     }
-    meta = {k: t.get(k) for k in ("id", "name", "state", "bbox", "extent", "master_plan")}
+    meta = {k: t.get(k) for k in ("id", "name", "state", "bbox", "extent", "master_plan", "parent", "site")}
     data = {**meta, "sample": True, "origin": [ox, oy], "kx": kx, "ky": M_PER_DEG_LAT, "weights": list(WEIGHTS), "class_label": CLASS_LABEL, **cols}
     return {"meta": {**meta, "summary": summary}, "data": data}
 
@@ -220,6 +224,7 @@ def run():
         "sample": True,
         "_note": "Footprints: Microsoft Global ML Building Footprints (ODbL). Yield: pvlib on NASA POWER per township. Shading, condition and owner attributes are SAMPLE data.",
         "source": "Microsoft Global ML Building Footprints (Malaysia, 2026-02 release), ODbL",
+        "list_note": "Township list and locations are approximate (OpenStreetMap); confirm against SDP's official township list.",
         "min_kwp": MIN_KWP, "townships": index}, indent=1, ensure_ascii=False))
 
 
