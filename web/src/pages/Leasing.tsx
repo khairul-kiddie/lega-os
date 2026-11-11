@@ -76,7 +76,7 @@ export default function Leasing() {
   }, [portfolios, scanned])
 
   const counts = Object.fromEntries(STATUS.map((s) => [s.id, items.filter((i) => i.status === s.id).length])) as Record<LeaseStatus, number>
-  const isCommunity = (r: LeaseItem) => !!r.portfolioId?.startsWith('community-')
+  const isCommunity = (r: LeaseItem) => !!r.portfolioId && (r.portfolioId.startsWith('community-') || r.portfolioId.startsWith('planner-'))
   const nCommunity = items.filter(isCommunity).length
   const needed = target ? target.roofs + nCommunity : items.length
   // community roofs first: schools, surau and street lamps before business buyers

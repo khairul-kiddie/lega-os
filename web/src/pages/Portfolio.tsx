@@ -88,7 +88,7 @@ function List() {
         eyebrow="Community energy planner · funding"
         title="Commercial buyers"
         subtitle={<>Community buildings come first (<Link to="/planner" className="text-primary underline underline-offset-2">community energy planner</Link>). The good roofs left over supply local businesses, and SDP’s margin pays for the community batteries and upkeep. One portfolio = one buyer · sample buyers</>}
-        right={<button type="button" className="btn-primary !text-base" onClick={create}>+ New portfolio</button>}
+        right={<><Link to="/firming?view=buyers" className="btn-ghost">Surplus forecast</Link><button type="button" className="btn-primary !text-base" onClick={create}>+ New portfolio</button></>}
       />
       <div className="card overflow-x-auto">
         <table className="w-full text-[15px]">

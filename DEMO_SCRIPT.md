@@ -1,57 +1,45 @@
-# LEGA OS — 5-minute demo script
+# LEGA OS — 5-minute demo script (v2, community-first)
 
-**The story in one line:** SDP's own rooftops power the township first (schools, surau, halls, clinics, and every street lamp, every night), and the power left over is sold to local businesses to pay for it.
+**The story in one line:** community first, commercially funded. SDP's solar and batteries keep schools, surau, evacuation centres and street lamps running; power left over is sold to local businesses to pay for it.
 
 **Before recording**
-- Open https://khairul-kiddie.github.io/lega-os/ in a fresh private window. City of Elmina is already scanned; the other seven townships are not, so you can scan one live.
+- Open https://khairul-kiddie.github.io/lega-os/ in a fresh private window (so the planner starts clean).
 - Use a window about 1440 px wide, with browser zoom at 100%.
 - Keep this script open on a second screen.
 
 | Time | Screen | Click path | Say |
 |---|---|---|---|
-| 0:00–0:25 | **Roof map**, all townships | Land on the page. Point at the pins. | "A township of tomorrow should run on its own sunshine. SDP has thousands of roofs across its townships. LEGA OS turns them into community power: first for the schools, surau and street lamps, and only then for business. Here are SDP's townships; green ones are scanned." |
-| 0:25–0:55 | **Scan a township** | Click **Bandar Bukit Raja**, then **Scan Bandar Bukit Raja**. When done, **View results**. | "Scanning works in five steps: fetch imagery, detect buildings, estimate shading, simulate yield on Bukit Raja's own NASA weather, and score every roof. Here we replay a precomputed scan. 3,524 buildings inside Bukit Raja's real boundary, 1,420 good roofs." |
-| 0:55–1:45 | **Community plan** | **Community plan** (City of Elmina). Point at the four numbers. Click **SJK (C) Ladang Regent** in the table, then **Al-Amin Darul Musthopa**. | "This is the heart of it. Every school, surau, hall and clinic here is a real building from OpenStreetMap. All 14 run on solar. This school powers itself from its own roof, with a battery for after dark. This one has no usable roof, so one good roof nearby shares with it. We size for the cloudiest month, not the average." |
-| 1:45–2:30 | **Street lamps that never go dark** | Scroll to the lamp section. Point at the chart and the three cards. | "Street lamps are the hard part: they only run at night. City of Elmina has about 4,100 lamps on 133 km of road, in 37 groups. Each group gets roofs that charge a battery by day. We replayed every one of 4,018 days of real weather since 2015 through every group. Not one night went dark, and the batteries never fell below a 20% reserve. With a battery that only held one night, the worst group would have gone dark 246 times." |
-| 2:30–2:45 | **Plan to rooftops** | Click **Send 58 roofs to leasing**. | "58 roofs power all of this: 1,420 tonnes of CO₂ a year off the grid. We send them to the leasing team first." |
-| 2:45–3:25 | **Lights-on forecast** | **Lights-on forecast**. Point at the dark card and the chart. Click **30%**, then **Full**. | "Every morning we take the 14-day weather forecast and run it through every lamp group. Today: all lamps stay lit. If a storm week is coming, a group gets flagged early: dim after midnight, or pre-charge from the grid. If the batteries start at only 30%, the safe forecast shows them climbing back above the reserve within days." |
-| 3:25–4:00 | **Surplus buyers** | **Surplus buyers**, then **Open plan** on *Innovation Park, Elmina*. Click **Monsoon-proof**. | "Community roofs are reserved first, so business plans can't take them. City of Elmina still has 46 GWh a year left over. Innovation Park needs 1,800 MWh a year: 39 roofs with a 15% buffer, or 43 for a monsoon-proof plan that keeps 96% of the worst month even if one owner in five says no. That income pays for the batteries and upkeep." |
-| 4:00–4:15 | **Leasing list** | **Leasing list**. | "The outreach team sees community roofs first, then business roofs, each with why it ranks there and the next step. **Export for field team** gives them a spreadsheet." |
-| 4:15–4:45 | **Model insights → Forecast model** | **Model insights**, **Forecast model**, scroll to *Did the forecast keep its promises?* | "Every promise rests on this forecast. We trained it on real archived forecasts from 2017–2022 and tested it on 2023–2025, years it never saw. The safe amount held 92.6% of the time, and 86% on true day-ahead forecasts. We show both." |
-| 4:45–5:00 | Close | Back to **Community plan**. | "LEGA OS: SDP's roofs power the township first. Schools and surau run on sunshine, the street lamps never go dark, and the surplus pays for it." |
+| 0:00–0:30 | **Roof map** (overview) | Land on the page. Point along the top row of tiles. | "Our mentors at SDP told us three things: give back to the community, own the energy ecosystem, and help plan Kulai. So LEGA OS now opens with community numbers: buildings that are bill-neutral, hours of backup at evacuation centres, street lamps at risk this week, CO₂ avoided, and bills saved. Business sales are still here, in the small tile on the right: they fund all of this." |
+| 0:30–1:30 | **Community energy planner** | **Community energy planner**. Point at the priority column. **+ New asset** → **Community hall / evacuation centre (PPS)** card → name *Dewan Komuniti Elmina (PPS)* → **Typical size** → **SDP-owned**, **Critical** → **Continue** → **Both**, **48 h** → **Next**. | "These are City of Elmina's real schools, surau and clinics from OpenStreetMap, ranked by need: criticality, people served, flood risk and bill, not revenue. Let's add the evacuation centre. It must cut its bills *and* stay on in an outage for 48 hours. Grid-tied solar switches off in a blackout, so that always means a battery." |
+| 1:30–2:00 | **Plan** | Point at the four numbers, the 24-hour chart, then the checks and **Funded by**. | "28 kWp on its own roof and a 234 kWh battery. The grey area is the night load the battery covers. It is bill-neutral and SDP-owned. In the wettest week of the last 11 years it lasts about 152 of 168 hours, and the plan says exactly how much solar to add to stay on all week. About 530 MWh a year of commercial sales pays this battery back in 10 years." |
+| 2:00–2:50 | **Battery controller** | **Battery controller** (Dewan Komuniti, Storm drill). Point at the storm banner and the chart. Then **Simulate grid outage** (Fri 03:00 or similar, +36 h). | "This is the battery brain. It runs the next 72 hours of real forecast weather. A storm is coming, so a day ahead it raises the reserve from 30% to 100% and tops up. Now the grid fails in the middle of the storm: the hall switches to emergency mode and stays on to the end of the forecast. Without storm prep it would have gone dark after about a day. It's behind the meter on SDP property: no TNB wires needed." |
+| 2:50–3:30 | **Street-light watch** | **Street-light watch**. Click the top lamp in the list, then **Maintenance plan**. | "Street lamps run at night, so rooftop solar can't help. Each lamp has its own panel and battery. We run the 7-day forecast through every lamp: these few will go dark, and here's why: tree shade, a worn battery, rainy days ahead. One click gives the crew a Thursday route, road by road." |
+| 3:30–4:30 | **Plan a new township (Kulai)** | **Plan a new township**. Drag **Street grid rotation** 0 → 90. Change **2-storey terrace (hip)** to **Gable**. Tick **Solar-ready construction**. In Phase 2, **Send to planner**. | "Kulai doesn't exist yet, so we plan from the layout. We used real hourly weather for Kulai. Rotate the whole street grid: almost nothing changes, because near the equator a pitched roof always has a face toward the sun. Switch hip roofs to gable: a big jump, because gables have half again the usable roof. Solar-ready construction avoids retrofit costs for every home. And the evacuation centre goes straight into the planner, with a battery sized the same way." |
+| 4:30–5:00 | Close | **Model insights → Orientation study (Kulai)**, then back to **Roof map**. | "Every number comes from real weather and real buildings, with sample loads clearly marked. LEGA OS: community first, commercially funded. The schools, surau, evacuation centres and street lamps stay on, and local business pays for it." |
 
-**Numbers to know (City of Elmina)**
+**Numbers to know**
 
 | | |
 |---|---|
-| Community buildings | 14 of 14 powered (7 from their own roof, 7 sharing nearby roofs) |
-| Street lamps | 4,131 estimated on 133 km of road, 37 groups, 0 dark nights 2015–2025 |
-| Hardest morning | 26% battery left, all groups together, 13 Jan 2018 |
-| Without a proper battery | 246 dark nights in the worst group (one-night battery) |
-| CO₂ | 1,420 t a year at 0.740 t/MWh (Energy Commission, Peninsular 2024) |
-| Roofs used | 58 (52 of them good roofs); 46.2 GWh a year left for businesses |
-| Innovation Park | 39 roofs (balanced), 43 roofs (monsoon-proof, 96% worst month with dropout) |
+| City of Elmina | 14 of 14 community buildings, 4,131 solar street lamps, 1,259 t CO₂/yr, 48.9 GWh/yr left for businesses |
+| New PPS (typical 25 MWh/yr, both, 48 h) | 28.4 kWp, 234 kWh battery, ≈ 152 h in the P90 wettest week (needs +4.4 kWp for all 7 days) |
+| Wettest week (P90), Elmina | 2.18 kWh/kWp a day vs 3.52 typical |
+| Lamps in the community plan | 0 dark nights 2015–2025; 255 dark nights in the worst group with a one-night battery |
+| Kulai | Rotate the grid: about +0.05%; hip → gable: about +41%; pitch 30° → 15°: about +5% |
+| Innovation Park (commercial) | 38 roofs balanced, 41 monsoon-proof |
+
+The battery controller and street-light watch use the live forecast, which refreshes every morning, so read those numbers off the screen rather than memorising them.
 
 **If a judge asks…**
-- *"Are the facilities real?"* Yes: names and locations come from OpenStreetMap. Energy use per building is a typical figure until SDP shares TNB bills.
-- *"Are the lamps real?"* The roads are real; lamp positions are estimated (one every 30–40 m) because OpenStreetMap maps only 50 lamps in Elmina. The council's lamp register would replace this.
-- *"How does power get from a neighbour's roof to the school?"* Through SDP-owned private wiring inside the township, or via NEM or CRESS. The exact route is to be confirmed with the Energy Commission and the council.
-- *"Who pays?"* The surplus sold to local businesses (46 GWh a year in Elmina alone).
-
-**Lights-on forecast cheat sheet**
-
-| Part of the screen | What it shows | How to use it |
-|---|---|---|
-| **Street lamps / Business buyers** tabs | Lamps (default) or the surplus forecast for a business buyer | Stay on Street lamps for the community story |
-| **Battery charge tonight** | Starting charge: there is no live battery data yet | Show *30%* to demonstrate recovery, then back to *Full* |
-| Dark card | Whether every lamp stays lit for 14 nights, and the lowest charge | Read the headline and the action box |
-| Chart | Each morning's charge: dark line = safe (P90), light line = expected (P50), dashed = 20% reserve | A dot below the dashed line is a group to act on |
-| **Groups to act on** | Groups that dip below the reserve: dim after midnight, or pre-charge from the grid | Usually empty; that's the point |
-
-The forecast refreshes every morning automatically, so read the numbers off the screen rather than memorising them.
+- *"Does solar keep the hall on in a blackout?"* Only with a battery. Grid-tied inverters shut off for safety; the planner only offers outage backup with a battery.
+- *"Are you replacing TNB?"* No. SDP owns panels and batteries behind the meter on its own property. Power from a leased neighbour roof reaches a building over TNB's wires (NEM / CRESS); the grid still backs everything up.
+- *"Why aren't street lamps on the rooftop plan?"* They run at night, when solar output is zero. They are standalone solar lamps with their own panel and battery.
+- *"Is roof direction really that unimportant?"* For a whole house, yes: one face changes by up to 4% at 20° tilt (east is slightly best, thanks to clearer mornings), but a gable house has two opposite faces, so the house total moves about 0.1%. Pitch and roof shape matter more.
+- *"Are the buildings and loads real?"* Buildings and roads are real (OpenStreetMap). Loads, people served, flood zones, prices, battery sites and lamp specs are sample values, and every screen says so.
+- *"Who pays?"* Commercial buyers of the surplus. The planner shows the commercial MWh each battery needs.
 
 **If something fails live**
-- The township and community data ship with the site. Only the satellite tiles come from Esri, so record on a good connection.
-- If the live forecast is out of date, the forecast screen shows a "stale" banner and the last cached forecast.
-- To reset the demo (scans, portfolios, leasing list), clear the site's storage in the browser and reload.
-- The scan replay takes about 6 seconds; don't click away mid-scan or that township won't be marked as scanned.
+- All data ships with the site. Only the satellite tiles come from Esri, so record on a good connection.
+- If the live forecast is out of date, the screens still work from the last cached forecast.
+- To reset the demo (planner, portfolios, leasing list), clear the site's storage in the browser and reload.
+- If the live 72-hour forecast has its own storm, the **Live forecast** button will show storm prep too; the **Storm drill** always does.
