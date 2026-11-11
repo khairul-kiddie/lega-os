@@ -8,6 +8,7 @@ const NAV: { to: string; label: string; badge?: string }[] = [
   { to: '/planner', label: 'Community energy planner' },
   { to: '/leasing', label: 'Leasing list' },
   { to: '/battery', label: 'Battery controller' },
+  { to: '/streetlights', label: 'Street-light watch' },
   { to: '/kulai', label: 'Plan a new township', badge: 'Kulai' },
   { to: '/insights', label: 'Model insights' },
 ]
@@ -38,6 +39,7 @@ function useContext(): [string, string] {
   }
   if (pathname.startsWith('/planner')) return ['Community energy planner', 'All SDP townships']
   if (pathname.startsWith('/battery')) return ['Battery controller', 'City of Elmina (sample sites)']
+  if (pathname.startsWith('/streetlights')) return ['Street-light watch', 'City of Elmina (sample fleet)']
   if (pathname.startsWith('/kulai')) return ['Design stage', 'Kulai, Johor (sample layout)']
   if (pathname.startsWith('/portfolio')) return ['Commercial buyers', 'Fund community projects']
   return ['Township', 'City of Elmina']

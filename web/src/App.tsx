@@ -8,6 +8,7 @@ import Firming from './pages/Firming'
 import Planner from './pages/Planner'
 import Kulai from './pages/Kulai'
 import BatteryController from './pages/BatteryController'
+import StreetLights from './pages/StreetLights'
 import Resident from './pages/Resident'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/portfolio/*" element={<Portfolio />} />
         <Route path="/kulai" element={<Kulai />} />
         <Route path="/battery" element={<BatteryController />} />
+        <Route path="/streetlights" element={<StreetLights />} />
         <Route path="/leasing" element={<Leasing />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/firming" element={<Firming />} />

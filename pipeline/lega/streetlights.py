@@ -80,11 +80,11 @@ def _roads():
 
 
 def _spec(rng) -> dict:
-    """Panel and battery sized to the LED, as installers do (about 2.5x the night's energy, 1.5-2 nights)."""
+    """Panel and battery sized to the LED, as installers do (about 2.5x the night's energy, 2-3 nights)."""
     led = rng.choice([20, 25, 30, 30, 40])
     need = night_wh(led)
-    return {"led_w": led, "panel_wp": int(round(need * rng.uniform(0.75, 0.95) / 10) * 10),
-            "battery_wh": int(round(need * rng.choice([1.5, 1.8, 2.0]) / 50) * 50), "soh": round(rng.uniform(0.6, 1.0), 2)}
+    return {"led_w": led, "panel_wp": int(round(need * rng.uniform(0.55, 0.8) / 10) * 10),
+            "battery_wh": int(round(need * rng.choice([2.0, 2.5, 3.0]) / 50) * 50), "soh": round(rng.uniform(0.6, 1.0), 2)}
 
 
 def build_fleet() -> list[dict]:
@@ -102,8 +102,13 @@ def build_fleet() -> list[dict]:
             lamps.append({
                 "id": f"SL-{len(lamps) + 1:03d}", "road": name, "lat": round(p[1], 6), "lon": round(p[0], 6),
                 **_spec(rng),
-                "shade": shade, "charge": round(rng.uniform(0.45, 1.0), 2),
+                "shade": shade, "charge": round(rng.uniform(0.6, 1.0), 2),
             })
+    # an ageing fleet: about one lamp in six has a worn battery and/or a tree grown over its panel
+    for L in rng.sample(lamps, len(lamps) // 6):
+        L["soh"] = round(rng.uniform(0.6, 0.72), 2)
+        L["shade"] = round(rng.uniform(0.5, 0.65), 2) if rng.random() < 0.7 else L["shade"]
+        L["charge"] = round(rng.uniform(0.35, 0.7), 2)
     return lamps
 
 

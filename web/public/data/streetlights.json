@@ -15,11 +15,11 @@
    "lat": 3.177859,
    "lon": 101.509869,
    "led_w": 20,
-   "panel_wp": 180,
-   "battery_wh": 300,
+   "panel_wp": 150,
+   "battery_wh": 400,
    "soh": 0.75,
    "shade": 0.76,
-   "charge": 0.48
+   "charge": 0.62
   },
   {
    "id": "SL-002",
@@ -27,11 +27,11 @@
    "lat": 3.178178,
    "lon": 101.510512,
    "led_w": 20,
-   "panel_wp": 160,
-   "battery_wh": 400,
-   "soh": 0.77,
-   "shade": 0.67,
-   "charge": 0.9
+   "panel_wp": 120,
+   "battery_wh": 600,
+   "soh": 0.68,
+   "shade": 0.53,
+   "charge": 0.44
   },
   {
    "id": "SL-003",
@@ -39,11 +39,11 @@
    "lat": 3.181669,
    "lon": 101.516024,
    "led_w": 40,
-   "panel_wp": 380,
-   "battery_wh": 800,
+   "panel_wp": 310,
+   "battery_wh": 1200,
    "soh": 0.83,
    "shade": 0.59,
-   "charge": 0.48
+   "charge": 0.62
   },
   {
    "id": "SL-004",
@@ -51,11 +51,11 @@
    "lat": 3.177529,
    "lon": 101.509936,
    "led_w": 25,
-   "panel_wp": 200,
-   "battery_wh": 400,
+   "panel_wp": 160,
+   "battery_wh": 500,
    "soh": 0.82,
    "shade": 0.72,
-   "charge": 0.76
+   "charge": 0.83
   },
   {
    "id": "SL-005",
@@ -63,11 +63,11 @@
    "lat": 3.181542,
    "lon": 101.515594,
    "led_w": 20,
-   "panel_wp": 170,
-   "battery_wh": 400,
+   "panel_wp": 140,
+   "battery_wh": 600,
    "soh": 0.68,
    "shade": 1.0,
-   "charge": 0.5
+   "charge": 0.64
   },
   {
    "id": "SL-006",
@@ -75,11 +75,11 @@
    "lat": 3.182103,
    "lon": 101.516524,
    "led_w": 40,
-   "panel_wp": 320,
-   "battery_wh": 800,
+   "panel_wp": 240,
+   "battery_wh": 1200,
    "soh": 0.81,
    "shade": 1.0,
-   "charge": 0.88
+   "charge": 0.91
   },
   {
    "id": "SL-007",
@@ -87,11 +87,11 @@
    "lat": 3.176792,
    "lon": 101.508569,
    "led_w": 30,
-   "panel_wp": 240,
-   "battery_wh": 450,
+   "panel_wp": 190,
+   "battery_wh": 600,
    "soh": 0.88,
    "shade": 1.0,
-   "charge": 0.58
+   "charge": 0.7
   },
   {
    "id": "SL-008",
@@ -99,11 +99,11 @@
    "lat": 3.1764,
    "lon": 101.50796,
    "led_w": 30,
-   "panel_wp": 270,
-   "battery_wh": 550,
+   "panel_wp": 220,
+   "battery_wh": 750,
    "soh": 0.84,
    "shade": 1.0,
-   "charge": 0.49
+   "charge": 0.63
   },
   {
    "id": "SL-009",
@@ -111,8 +111,8 @@
    "lat": 3.175778,
    "lon": 101.50707,
    "led_w": 30,
-   "panel_wp": 230,
-   "battery_wh": 550,
+   "panel_wp": 180,
+   "battery_wh": 750,
    "soh": 0.77,
    "shade": 1.0,
    "charge": 0.98
@@ -123,11 +123,11 @@
    "lat": 3.175503,
    "lon": 101.506449,
    "led_w": 30,
-   "panel_wp": 250,
-   "battery_wh": 550,
+   "panel_wp": 190,
+   "battery_wh": 750,
    "soh": 0.84,
    "shade": 0.72,
-   "charge": 0.77
+   "charge": 0.83
   },
   {
    "id": "SL-011",
@@ -135,11 +135,11 @@
    "lat": 3.175933,
    "lon": 101.507032,
    "led_w": 30,
-   "panel_wp": 250,
-   "battery_wh": 600,
+   "panel_wp": 200,
+   "battery_wh": 900,
    "soh": 0.63,
    "shade": 1.0,
-   "charge": 0.85
+   "charge": 0.89
   },
   {
    "id": "SL-012",
@@ -147,11 +147,11 @@
    "lat": 3.176546,
    "lon": 101.507929,
    "led_w": 30,
-   "panel_wp": 240,
-   "battery_wh": 550,
-   "soh": 0.95,
-   "shade": 0.73,
-   "charge": 0.64
+   "panel_wp": 190,
+   "battery_wh": 750,
+   "soh": 0.69,
+   "shade": 0.65,
+   "charge": 0.69
   },
   {
    "id": "SL-013",
@@ -159,11 +159,11 @@
    "lat": 3.177132,
    "lon": 101.508843,
    "led_w": 40,
-   "panel_wp": 310,
-   "battery_wh": 600,
+   "panel_wp": 230,
+   "battery_wh": 800,
    "soh": 0.69,
    "shade": 1.0,
-   "charge": 0.61
+   "charge": 0.71
   },
   {
    "id": "SL-014",
@@ -171,11 +171,11 @@
    "lat": 3.17912,
    "lon": 101.511922,
    "led_w": 30,
-   "panel_wp": 230,
-   "battery_wh": 550,
-   "soh": 0.76,
-   "shade": 1.0,
-   "charge": 0.6
+   "panel_wp": 170,
+   "battery_wh": 750,
+   "soh": 0.72,
+   "shade": 0.5,
+   "charge": 0.53
   },
   {
    "id": "SL-015",
@@ -183,11 +183,11 @@
    "lat": 3.179721,
    "lon": 101.512827,
    "led_w": 40,
-   "panel_wp": 320,
-   "battery_wh": 700,
+   "panel_wp": 250,
+   "battery_wh": 1000,
    "soh": 0.99,
    "shade": 0.67,
-   "charge": 0.83
+   "charge": 0.87
   },
   {
    "id": "SL-016",
@@ -195,11 +195,11 @@
    "lat": 3.180322,
    "lon": 101.513732,
    "led_w": 20,
-   "panel_wp": 160,
-   "battery_wh": 300,
+   "panel_wp": 120,
+   "battery_wh": 400,
    "soh": 0.86,
    "shade": 0.59,
-   "charge": 0.46
+   "charge": 0.6
   },
   {
    "id": "SL-017",
@@ -207,11 +207,11 @@
    "lat": 3.178517,
    "lon": 101.511021,
    "led_w": 30,
-   "panel_wp": 230,
-   "battery_wh": 550,
+   "panel_wp": 170,
+   "battery_wh": 750,
    "soh": 0.81,
    "shade": 1.0,
-   "charge": 0.79
+   "charge": 0.84
   },
   {
    "id": "SL-018",
@@ -219,11 +219,11 @@
    "lat": 3.17879,
    "lon": 101.511693,
    "led_w": 40,
-   "panel_wp": 380,
-   "battery_wh": 800,
-   "soh": 0.87,
-   "shade": 0.55,
-   "charge": 0.48
+   "panel_wp": 320,
+   "battery_wh": 1200,
+   "soh": 0.7,
+   "shade": 0.59,
+   "charge": 0.66
   },
   {
    "id": "SL-019",
@@ -231,11 +231,11 @@
    "lat": 3.178193,
    "lon": 101.510785,
    "led_w": 40,
-   "panel_wp": 330,
-   "battery_wh": 700,
-   "soh": 0.76,
-   "shade": 1.0,
-   "charge": 0.71
+   "panel_wp": 260,
+   "battery_wh": 1000,
+   "soh": 0.72,
+   "shade": 0.54,
+   "charge": 0.51
   },
   {
    "id": "SL-020",
@@ -243,11 +243,11 @@
    "lat": 3.180816,
    "lon": 101.514769,
    "led_w": 25,
-   "panel_wp": 210,
-   "battery_wh": 400,
+   "panel_wp": 170,
+   "battery_wh": 500,
    "soh": 0.74,
    "shade": 0.58,
-   "charge": 0.48
+   "charge": 0.62
   },
   {
    "id": "SL-021",
@@ -255,11 +255,11 @@
    "lat": 3.180207,
    "lon": 101.51387,
    "led_w": 20,
-   "panel_wp": 190,
-   "battery_wh": 400,
+   "panel_wp": 160,
+   "battery_wh": 600,
    "soh": 0.61,
    "shade": 0.56,
-   "charge": 0.93
+   "charge": 0.95
   },
   {
    "id": "SL-022",
@@ -267,11 +267,11 @@
    "lat": 3.179615,
    "lon": 101.512959,
    "led_w": 30,
-   "panel_wp": 280,
-   "battery_wh": 600,
+   "panel_wp": 240,
+   "battery_wh": 900,
    "soh": 0.75,
    "shade": 1.0,
-   "charge": 0.52
+   "charge": 0.65
   },
   {
    "id": "SL-023",
@@ -279,11 +279,11 @@
    "lat": 3.17922,
    "lon": 101.512352,
    "led_w": 30,
-   "panel_wp": 250,
-   "battery_wh": 550,
-   "soh": 0.63,
-   "shade": 1.0,
-   "charge": 0.51
+   "panel_wp": 200,
+   "battery_wh": 750,
+   "soh": 0.65,
+   "shade": 0.6,
+   "charge": 0.48
   },
   {
    "id": "SL-024",
@@ -291,11 +291,11 @@
    "lat": 3.181005,
    "lon": 101.514748,
    "led_w": 25,
-   "panel_wp": 210,
-   "battery_wh": 400,
+   "panel_wp": 170,
+   "battery_wh": 500,
    "soh": 0.98,
    "shade": 0.61,
-   "charge": 0.74
+   "charge": 0.81
   },
   {
    "id": "SL-025",
@@ -303,11 +303,11 @@
    "lat": 3.180699,
    "lon": 101.514296,
    "led_w": 20,
-   "panel_wp": 180,
-   "battery_wh": 350,
+   "panel_wp": 150,
+   "battery_wh": 500,
    "soh": 0.99,
    "shade": 0.72,
-   "charge": 0.92
+   "charge": 0.95
   },
   {
    "id": "SL-026",
@@ -315,11 +315,11 @@
    "lat": 3.179842,
    "lon": 101.50561,
    "led_w": 30,
-   "panel_wp": 280,
-   "battery_wh": 550,
+   "panel_wp": 230,
+   "battery_wh": 750,
    "soh": 0.91,
    "shade": 1.0,
-   "charge": 0.74
+   "charge": 0.81
   },
   {
    "id": "SL-027",
@@ -327,8 +327,8 @@
    "lat": 3.180267,
    "lon": 101.506196,
    "led_w": 30,
-   "panel_wp": 260,
-   "battery_wh": 600,
+   "panel_wp": 210,
+   "battery_wh": 900,
    "soh": 0.92,
    "shade": 1.0,
    "charge": 0.99
@@ -339,11 +339,11 @@
    "lat": 3.180904,
    "lon": 101.507076,
    "led_w": 25,
-   "panel_wp": 230,
-   "battery_wh": 500,
+   "panel_wp": 190,
+   "battery_wh": 750,
    "soh": 0.92,
    "shade": 1.0,
-   "charge": 0.56
+   "charge": 0.68
   },
   {
    "id": "SL-029",
@@ -351,11 +351,11 @@
    "lat": 3.18036,
    "lon": 101.50644,
    "led_w": 20,
-   "panel_wp": 190,
-   "battery_wh": 350,
-   "soh": 0.79,
-   "shade": 1.0,
-   "charge": 0.56
+   "panel_wp": 160,
+   "battery_wh": 500,
+   "soh": 0.68,
+   "shade": 0.6,
+   "charge": 0.54
   },
   {
    "id": "SL-030",
@@ -363,8 +363,8 @@
    "lat": 3.183096,
    "lon": 101.51025,
    "led_w": 30,
-   "panel_wp": 250,
-   "battery_wh": 600,
+   "panel_wp": 200,
+   "battery_wh": 900,
    "soh": 1.0,
    "shade": 1.0,
    "charge": 0.98
@@ -375,11 +375,11 @@
    "lat": 3.182664,
    "lon": 101.509668,
    "led_w": 25,
-   "panel_wp": 190,
-   "battery_wh": 450,
+   "panel_wp": 140,
+   "battery_wh": 600,
    "soh": 0.68,
    "shade": 1.0,
-   "charge": 0.56
+   "charge": 0.68
   },
   {
    "id": "SL-032",
@@ -387,11 +387,11 @@
    "lat": 3.182029,
    "lon": 101.508787,
    "led_w": 40,
-   "panel_wp": 370,
-   "battery_wh": 700,
+   "panel_wp": 300,
+   "battery_wh": 1000,
    "soh": 0.96,
    "shade": 1.0,
-   "charge": 0.64
+   "charge": 0.74
   },
   {
    "id": "SL-033",
@@ -399,11 +399,11 @@
    "lat": 3.181415,
    "lon": 101.507891,
    "led_w": 20,
-   "panel_wp": 190,
-   "battery_wh": 400,
-   "soh": 0.9,
+   "panel_wp": 160,
+   "battery_wh": 600,
+   "soh": 0.71,
    "shade": 1.0,
-   "charge": 0.71
+   "charge": 0.46
   },
   {
    "id": "SL-034",
@@ -411,11 +411,11 @@
    "lat": 3.181052,
    "lon": 101.507281,
    "led_w": 30,
-   "panel_wp": 230,
-   "battery_wh": 600,
+   "panel_wp": 170,
+   "battery_wh": 900,
    "soh": 0.76,
    "shade": 1.0,
-   "charge": 0.67
+   "charge": 0.76
   },
   {
    "id": "SL-035",
@@ -423,11 +423,11 @@
    "lat": 3.181475,
    "lon": 101.507869,
    "led_w": 25,
-   "panel_wp": 200,
-   "battery_wh": 400,
+   "panel_wp": 150,
+   "battery_wh": 500,
    "soh": 0.61,
    "shade": 1.0,
-   "charge": 0.77
+   "charge": 0.84
   },
   {
    "id": "SL-036",
@@ -435,11 +435,11 @@
    "lat": 3.182109,
    "lon": 101.508751,
    "led_w": 25,
-   "panel_wp": 220,
-   "battery_wh": 500,
+   "panel_wp": 180,
+   "battery_wh": 750,
    "soh": 0.99,
    "shade": 1.0,
-   "charge": 0.81
+   "charge": 0.86
   },
   {
    "id": "SL-037",
@@ -447,11 +447,11 @@
    "lat": 3.18275,
    "lon": 101.509628,
    "led_w": 40,
-   "panel_wp": 340,
-   "battery_wh": 600,
+   "panel_wp": 270,
+   "battery_wh": 800,
    "soh": 0.61,
    "shade": 1.0,
-   "charge": 0.98
+   "charge": 0.99
   },
   {
    "id": "SL-038",
@@ -459,11 +459,11 @@
    "lat": 3.174554,
    "lon": 101.510214,
    "led_w": 25,
-   "panel_wp": 210,
-   "battery_wh": 400,
+   "panel_wp": 160,
+   "battery_wh": 500,
    "soh": 0.93,
    "shade": 1.0,
-   "charge": 0.57
+   "charge": 0.68
   },
   {
    "id": "SL-039",
@@ -471,11 +471,11 @@
    "lat": 3.173833,
    "lon": 101.510209,
    "led_w": 30,
-   "panel_wp": 260,
-   "battery_wh": 600,
+   "panel_wp": 200,
+   "battery_wh": 900,
    "soh": 0.73,
    "shade": 1.0,
-   "charge": 0.75
+   "charge": 0.82
   },
   {
    "id": "SL-040",
@@ -483,11 +483,11 @@
    "lat": 3.177182,
    "lon": 101.509913,
    "led_w": 20,
-   "panel_wp": 190,
-   "battery_wh": 350,
+   "panel_wp": 160,
+   "battery_wh": 500,
    "soh": 0.96,
    "shade": 1.0,
-   "charge": 0.81
+   "charge": 0.86
   },
   {
    "id": "SL-041",
@@ -495,11 +495,11 @@
    "lat": 3.176139,
    "lon": 101.510198,
    "led_w": 40,
-   "panel_wp": 330,
-   "battery_wh": 800,
+   "panel_wp": 260,
+   "battery_wh": 1200,
    "soh": 0.65,
    "shade": 1.0,
-   "charge": 0.53
+   "charge": 0.66
   },
   {
    "id": "SL-042",
@@ -507,11 +507,11 @@
    "lat": 3.175419,
    "lon": 101.510261,
    "led_w": 30,
-   "panel_wp": 270,
-   "battery_wh": 600,
+   "panel_wp": 220,
+   "battery_wh": 900,
    "soh": 0.6,
    "shade": 1.0,
-   "charge": 0.89
+   "charge": 0.92
   },
   {
    "id": "SL-043",
@@ -519,11 +519,11 @@
    "lat": 3.172549,
    "lon": 101.510405,
    "led_w": 30,
-   "panel_wp": 260,
-   "battery_wh": 450,
+   "panel_wp": 210,
+   "battery_wh": 600,
    "soh": 0.82,
    "shade": 1.0,
-   "charge": 0.63
+   "charge": 0.73
   },
   {
    "id": "SL-044",
@@ -531,11 +531,11 @@
    "lat": 3.173609,
    "lon": 101.510174,
    "led_w": 40,
-   "panel_wp": 340,
-   "battery_wh": 600,
-   "soh": 0.95,
-   "shade": 1.0,
-   "charge": 0.48
+   "panel_wp": 270,
+   "battery_wh": 800,
+   "soh": 0.63,
+   "shade": 0.53,
+   "charge": 0.66
   },
   {
    "id": "SL-045",
@@ -543,11 +543,11 @@
    "lat": 3.174324,
    "lon": 101.510092,
    "led_w": 20,
-   "panel_wp": 180,
-   "battery_wh": 400,
+   "panel_wp": 150,
+   "battery_wh": 600,
    "soh": 0.78,
    "shade": 1.0,
-   "charge": 0.47
+   "charge": 0.61
   },
   {
    "id": "SL-046",
@@ -555,11 +555,11 @@
    "lat": 3.175379,
    "lon": 101.510143,
    "led_w": 20,
-   "panel_wp": 170,
-   "battery_wh": 400,
+   "panel_wp": 130,
+   "battery_wh": 600,
    "soh": 0.99,
    "shade": 1.0,
-   "charge": 0.78
+   "charge": 0.84
   },
   {
    "id": "SL-047",
@@ -567,11 +567,11 @@
    "lat": 3.176445,
    "lon": 101.509976,
    "led_w": 30,
-   "panel_wp": 250,
-   "battery_wh": 600,
+   "panel_wp": 200,
+   "battery_wh": 900,
    "soh": 0.92,
    "shade": 1.0,
-   "charge": 0.73
+   "charge": 0.8
   },
   {
    "id": "SL-048",
@@ -579,11 +579,11 @@
    "lat": 3.178641,
    "lon": 101.508723,
    "led_w": 30,
-   "panel_wp": 280,
-   "battery_wh": 450,
+   "panel_wp": 230,
+   "battery_wh": 600,
    "soh": 0.94,
    "shade": 1.0,
-   "charge": 0.53
+   "charge": 0.65
   },
   {
    "id": "SL-049",
@@ -591,11 +591,11 @@
    "lat": 3.179237,
    "lon": 101.508312,
    "led_w": 20,
-   "panel_wp": 180,
-   "battery_wh": 350,
+   "panel_wp": 140,
+   "battery_wh": 500,
    "soh": 0.63,
    "shade": 0.68,
-   "charge": 0.82
+   "charge": 0.87
   },
   {
    "id": "SL-050",
@@ -603,11 +603,11 @@
    "lat": 3.180131,
    "lon": 101.507696,
    "led_w": 25,
-   "panel_wp": 230,
-   "battery_wh": 500,
+   "panel_wp": 200,
+   "battery_wh": 750,
    "soh": 0.86,
    "shade": 1.0,
-   "charge": 0.53
+   "charge": 0.66
   },
   {
    "id": "SL-051",
@@ -615,11 +615,11 @@
    "lat": 3.180727,
    "lon": 101.507286,
    "led_w": 25,
-   "panel_wp": 220,
-   "battery_wh": 400,
+   "panel_wp": 180,
+   "battery_wh": 500,
    "soh": 0.76,
    "shade": 1.0,
-   "charge": 0.72
+   "charge": 0.79
   },
   {
    "id": "SL-052",
@@ -627,11 +627,11 @@
    "lat": 3.180256,
    "lon": 101.507724,
    "led_w": 25,
-   "panel_wp": 220,
-   "battery_wh": 500,
-   "soh": 0.76,
+   "panel_wp": 180,
+   "battery_wh": 750,
+   "soh": 0.66,
    "shade": 1.0,
-   "charge": 0.68
+   "charge": 0.56
   },
   {
    "id": "SL-053",
@@ -639,11 +639,11 @@
    "lat": 3.179673,
    "lon": 101.508153,
    "led_w": 30,
-   "panel_wp": 230,
-   "battery_wh": 600,
+   "panel_wp": 170,
+   "battery_wh": 900,
    "soh": 0.78,
    "shade": 0.54,
-   "charge": 0.84
+   "charge": 0.88
   },
   {
    "id": "SL-054",
@@ -651,11 +651,11 @@
    "lat": 3.178807,
    "lon": 101.508809,
    "led_w": 30,
-   "panel_wp": 260,
-   "battery_wh": 450,
+   "panel_wp": 200,
+   "battery_wh": 600,
    "soh": 0.65,
    "shade": 0.71,
-   "charge": 0.96
+   "charge": 0.97
   },
   {
    "id": "SL-055",
@@ -663,11 +663,11 @@
    "lat": 3.178435,
    "lon": 101.509098,
    "led_w": 20,
-   "panel_wp": 160,
-   "battery_wh": 300,
+   "panel_wp": 120,
+   "battery_wh": 400,
    "soh": 0.96,
    "shade": 0.85,
-   "charge": 0.55
+   "charge": 0.67
   },
   {
    "id": "SL-056",
@@ -675,11 +675,11 @@
    "lat": 3.175099,
    "lon": 101.510446,
    "led_w": 30,
-   "panel_wp": 250,
-   "battery_wh": 600,
+   "panel_wp": 200,
+   "battery_wh": 900,
    "soh": 0.97,
    "shade": 1.0,
-   "charge": 0.76
+   "charge": 0.83
   },
   {
    "id": "SL-057",
@@ -687,11 +687,11 @@
    "lat": 3.175094,
    "lon": 101.511171,
    "led_w": 20,
-   "panel_wp": 160,
-   "battery_wh": 400,
+   "panel_wp": 120,
+   "battery_wh": 600,
    "soh": 0.67,
    "shade": 1.0,
-   "charge": 0.94
+   "charge": 0.96
   },
   {
    "id": "SL-058",
@@ -699,11 +699,11 @@
    "lat": 3.175095,
    "lon": 101.511895,
    "led_w": 20,
-   "panel_wp": 180,
-   "battery_wh": 350,
+   "panel_wp": 140,
+   "battery_wh": 500,
    "soh": 0.63,
    "shade": 1.0,
-   "charge": 0.92
+   "charge": 0.94
   },
   {
    "id": "SL-059",
@@ -711,11 +711,11 @@
    "lat": 3.175101,
    "lon": 101.51262,
    "led_w": 30,
-   "panel_wp": 230,
-   "battery_wh": 600,
+   "panel_wp": 170,
+   "battery_wh": 900,
    "soh": 0.77,
    "shade": 0.85,
-   "charge": 0.95
+   "charge": 0.97
   },
   {
    "id": "SL-060",
@@ -723,11 +723,11 @@
    "lat": 3.175105,
    "lon": 101.513345,
    "led_w": 20,
-   "panel_wp": 170,
-   "battery_wh": 300,
+   "panel_wp": 140,
+   "battery_wh": 400,
    "soh": 0.98,
    "shade": 1.0,
-   "charge": 0.98
+   "charge": 0.99
   },
   {
    "id": "SL-061",
@@ -735,11 +735,11 @@
    "lat": 3.175109,
    "lon": 101.514069,
    "led_w": 25,
-   "panel_wp": 200,
-   "battery_wh": 450,
+   "panel_wp": 150,
+   "battery_wh": 600,
    "soh": 0.85,
    "shade": 1.0,
-   "charge": 0.74
+   "charge": 0.81
   }
  ]
 }
