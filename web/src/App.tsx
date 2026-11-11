@@ -5,6 +5,7 @@ import Portfolio from './pages/Portfolio'
 import Leasing from './pages/Leasing'
 import Insights from './pages/Insights'
 import Firming from './pages/Firming'
+import Community from './pages/Community'
 import Resident from './pages/Resident'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Navigate to="/map" replace />} />
         <Route path="/map" element={<RoofMap />} />
+        <Route path="/community" element={<Community />} />
         <Route path="/portfolio/*" element={<Portfolio />} />
         <Route path="/leasing" element={<Leasing />} />
         <Route path="/insights" element={<Insights />} />

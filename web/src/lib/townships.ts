@@ -17,6 +17,10 @@ export interface TownshipSummary {
   by_source: Record<string, number>
   yield_kwh_kwp: number
   owners_for_1gwh: number | null
+  /** good roofs the community plan reserves (facilities, street lamps); business plans can't use them */
+  community_reserved?: number
+  /** average MWh/yr of the good roofs left for business buyers */
+  avg_mwh_surplus?: number
 }
 
 export interface TownshipMeta {

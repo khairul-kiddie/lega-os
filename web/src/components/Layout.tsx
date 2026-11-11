@@ -5,10 +5,11 @@ import type { TownshipIndex } from '../lib/townships'
 
 const NAV: { to: string; label: string; badge?: string }[] = [
   { to: '/map', label: 'Roof map' },
-  { to: '/portfolio', label: 'Portfolio builder' },
+  { to: '/community', label: 'Community plan' },
+  { to: '/firming', label: 'Lights-on forecast' },
+  { to: '/portfolio', label: 'Surplus buyers' },
   { to: '/leasing', label: 'Leasing list' },
   { to: '/insights', label: 'Model insights' },
-  { to: '/firming', label: 'Firming forecast', badge: 'Soon' },
 ]
 
 export function SunLogo({ className = 'h-7 w-7' }: { className?: string }) {
@@ -31,7 +32,11 @@ function useContext(): [string, string] {
     const t = data?.townships.find((x) => x.id === params.get('t'))
     return t ? ['Township', `${t.name}, ${t.state}`] : ['Roof map', 'All SDP townships']
   }
-  if (pathname.startsWith('/portfolio')) return ['Portfolio', 'All SDP townships']
+  if (pathname.startsWith('/community')) {
+    const t = data?.townships.find((x) => x.id === (params.get('t') ?? 'elmina'))
+    return ['Community plan', t ? `${t.name}, ${t.state}` : 'City of Elmina']
+  }
+  if (pathname.startsWith('/portfolio')) return ['Surplus buyers', 'All SDP townships']
   return ['Township', 'City of Elmina']
 }
 

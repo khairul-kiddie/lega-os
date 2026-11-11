@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader, Segmented } from '../components/ui'
 import { fmt, niceTicks, useJson, type YieldData } from '../lib/data'
@@ -6,6 +6,7 @@ import { pct, shortDate, type Backtest } from '../lib/forecast'
 import { buildPlan, portfolioStore, SAMPLE_PORTFOLIO_ID, type Plan, type Portfolio } from '../lib/portfolio'
 import { useStore } from '../lib/store'
 import { scannedStore, type TownshipIndex } from '../lib/townships'
+import LightsOn from './LightsOn'
 
 interface LiveDay {
   date: string
@@ -87,7 +88,36 @@ function dailyAction(gap: number, demand: number) {
   return `Gap of ${fmt(-gap, 1)} MWh: book a firming reserve (battery or grid contract).`
 }
 
+type View = 'lamps' | 'buyers'
+
 export default function Firming() {
+  const [params, setParams] = useSearchParams()
+  const view: View = params.get('view') === 'buyers' ? 'buyers' : 'lamps'
+  const tabs = (
+    <Segmented
+      label="Forecast for"
+      value={view}
+      onChange={(v) => setParams(v === 'buyers' ? { view: 'buyers' } : {}, { replace: true })}
+      options={[
+        { id: 'lamps', label: 'Street lamps' },
+        { id: 'buyers', label: 'Business buyers' },
+      ]}
+    />
+  )
+  if (view === 'buyers') return <BuyerForecast tabs={tabs} />
+  return (
+    <>
+      <PageHeader
+        title="Lights-on forecast"
+        subtitle="Will every street lamp stay lit for the next 14 nights? The live weather forecast, run through each lamp group’s solar and battery."
+        right={tabs}
+      />
+      <LightsOn />
+    </>
+  )
+}
+
+function BuyerForecast({ tabs }: { tabs: ReactNode }) {
   const { data: raw, error } = useJson<Live>('forecast_live.json')
   const { data: bt } = useJson<Backtest>('forecast_backtest.json')
   const { data: index } = useJson<TownshipIndex>('townships/index.json')
@@ -105,14 +135,15 @@ export default function Firming() {
   return (
     <>
       <PageHeader
-        title="Firming forecast"
-        subtitle={`How much SDP can safely promise ${target ? target.p.buyer : 'each buyer'} · roadmap feature, live weather forecast, sample buyers`}
+        title="Surplus forecast"
+        subtitle={`How much of the township’s surplus SDP can safely promise ${target ? target.p.buyer : 'each buyer'} · live weather forecast, sample buyers`}
         right={
           <>
+            {tabs}
             {options.length > 0 && target && (
               <label className="flex items-center gap-2 text-sm text-muted">
                 Buyer
-                <select className="input !w-auto min-w-[220px] font-medium text-ink" value={target.p.id} onChange={(e) => setParams({ p: e.target.value }, { replace: true })}>
+                <select className="input !w-auto min-w-[220px] font-medium text-ink" value={target.p.id} onChange={(e) => setParams({ view: 'buyers', p: e.target.value }, { replace: true })}>
                   {options.map((o) => <option key={o.p.id} value={o.p.id}>{o.p.buyer}</option>)}
                 </select>
               </label>

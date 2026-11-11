@@ -1,0 +1,528 @@
+{
+ "sample": true,
+ "grid_t_co2_per_mwh": 0.74,
+ "co2_source": "Energy Commission of Malaysia, Grid Emission Factor 2022-2024 (provisional), Peninsular 2024",
+ "facility_source": "OpenStreetMap amenities via Overpass API (ODbL)",
+ "loads": {
+  "university": {
+   "label": "University / college",
+   "mwh": 2000,
+   "day": 0.8
+  },
+  "school": {
+   "label": "School",
+   "mwh": 150,
+   "day": 0.9
+  },
+  "rel_school": {
+   "label": "Religious school",
+   "mwh": 70,
+   "day": 0.85
+  },
+  "kindergarten": {
+   "label": "Kindergarten",
+   "mwh": 12,
+   "day": 0.95
+  },
+  "learning": {
+   "label": "Learning centre",
+   "mwh": 8,
+   "day": 0.6
+  },
+  "masjid": {
+   "label": "Masjid",
+   "mwh": 100,
+   "day": 0.55
+  },
+  "surau": {
+   "label": "Surau",
+   "mwh": 18,
+   "day": 0.5
+  },
+  "worship": {
+   "label": "Temple / church",
+   "mwh": 20,
+   "day": 0.55
+  },
+  "hall": {
+   "label": "Community hall",
+   "mwh": 25,
+   "day": 0.45
+  },
+  "clinic": {
+   "label": "Clinic",
+   "mwh": 30,
+   "day": 0.85
+  },
+  "hospital": {
+   "label": "Hospital",
+   "mwh": 2500,
+   "day": 0.6
+  },
+  "civic": {
+   "label": "Public service",
+   "mwh": 60,
+   "day": 0.65
+  }
+ },
+ "lamp_roads": {
+  "primary": {
+   "spacing_m": 30,
+   "watts": 150
+  },
+  "secondary": {
+   "spacing_m": 30,
+   "watts": 120
+  },
+  "tertiary": {
+   "spacing_m": 35,
+   "watts": 90
+  },
+  "primary_link": {
+   "spacing_m": 30,
+   "watts": 120
+  },
+  "secondary_link": {
+   "spacing_m": 30,
+   "watts": 120
+  },
+  "tertiary_link": {
+   "spacing_m": 35,
+   "watts": 90
+  },
+  "residential": {
+   "spacing_m": 40,
+   "watts": 60
+  },
+  "unclassified": {
+   "spacing_m": 40,
+   "watts": 60
+  },
+  "living_street": {
+   "spacing_m": 40,
+   "watts": 40
+  }
+ },
+ "lamp_hours": 12,
+ "battery_eff": 0.9,
+ "battery_dod": 0.9,
+ "lamp_pv_oversize": 1.4,
+ "neighbour_m": 500,
+ "good_score": 75,
+ "townships": [
+  {
+   "id": "elmina",
+   "name": "City of Elmina",
+   "summary": {
+    "facilities": 14,
+    "self": 7,
+    "shared": 7,
+    "short": 0,
+    "by_group": {
+     "Schools": 5,
+     "Places of worship": 4,
+     "Community halls": 1,
+     "Health": 4,
+     "Public services": 0
+    },
+    "lamps": 4131,
+    "lamps_mapped_osm": 50,
+    "lamp_groups": 37,
+    "lamp_groups_ok": 37,
+    "dark_nights": 0,
+    "road_km": 132.7,
+    "lamp_mwh_yr": 1306.5,
+    "facility_mwh_yr": 613,
+    "community_mwh_yr": 1919.5,
+    "co2_t_yr": 1420,
+    "roofs_used": 58,
+    "good_roofs_reserved": 52,
+    "good_roofs": 935,
+    "surplus_mwh_yr": 46155.6,
+    "surplus_co2_t_yr": 34155,
+    "battery_kwh": 12406,
+    "yield_kwh_kwp": 1287.3,
+    "worst_month_share": 0.946,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 13.55,
+     "typical_kwh_kwp": 24.67
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "elmina-bp",
+   "name": "Elmina Business Park",
+   "summary": {
+    "facilities": 0,
+    "self": 0,
+    "shared": 0,
+    "short": 0,
+    "by_group": {
+     "Schools": 0,
+     "Places of worship": 0,
+     "Community halls": 0,
+     "Health": 0,
+     "Public services": 0
+    },
+    "lamps": 238,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 7,
+    "lamp_groups_ok": 7,
+    "dark_nights": 0,
+    "road_km": 9.5,
+    "lamp_mwh_yr": 62.6,
+    "facility_mwh_yr": 0,
+    "community_mwh_yr": 62.6,
+    "co2_t_yr": 46,
+    "roofs_used": 8,
+    "good_roofs_reserved": 8,
+    "good_roofs": 58,
+    "surplus_mwh_yr": 4887.8,
+    "surplus_co2_t_yr": 3617,
+    "battery_kwh": 428,
+    "yield_kwh_kwp": 1287.5,
+    "worst_month_share": 0.946,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 13.55,
+     "typical_kwh_kwp": 24.67
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "bukit-raja",
+   "name": "Bandar Bukit Raja",
+   "summary": {
+    "facilities": 7,
+    "self": 6,
+    "shared": 1,
+    "short": 0,
+    "by_group": {
+     "Schools": 1,
+     "Places of worship": 4,
+     "Community halls": 1,
+     "Health": 1,
+     "Public services": 0
+    },
+    "lamps": 4222,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 36,
+    "lamp_groups_ok": 36,
+    "dark_nights": 0,
+    "road_km": 146.1,
+    "lamp_mwh_yr": 1203.4,
+    "facility_mwh_yr": 2749,
+    "community_mwh_yr": 3952.4,
+    "co2_t_yr": 2925,
+    "roofs_used": 141,
+    "good_roofs_reserved": 139,
+    "good_roofs": 1420,
+    "surplus_mwh_yr": 56871.6,
+    "surplus_co2_t_yr": 42085,
+    "battery_kwh": 15858,
+    "yield_kwh_kwp": 1287.0,
+    "worst_month_share": 0.946,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 13.55,
+     "typical_kwh_kwp": 24.66
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "serenia",
+   "name": "Serenia City",
+   "summary": {
+    "facilities": 0,
+    "self": 0,
+    "shared": 0,
+    "short": 0,
+    "by_group": {
+     "Schools": 0,
+     "Places of worship": 0,
+     "Community halls": 0,
+     "Health": 0,
+     "Public services": 0
+    },
+    "lamps": 943,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 8,
+    "lamp_groups_ok": 8,
+    "dark_nights": 0,
+    "road_km": 32.0,
+    "lamp_mwh_yr": 262.0,
+    "facility_mwh_yr": 0,
+    "community_mwh_yr": 262.0,
+    "co2_t_yr": 194,
+    "roofs_used": 8,
+    "good_roofs_reserved": 8,
+    "good_roofs": 242,
+    "surplus_mwh_yr": 6270.0,
+    "surplus_co2_t_yr": 4640,
+    "battery_kwh": 3121,
+    "yield_kwh_kwp": 1319.7,
+    "worst_month_share": 0.921,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 12.72,
+     "typical_kwh_kwp": 25.29
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "ara-damansara",
+   "name": "Ara Damansara",
+   "summary": {
+    "facilities": 23,
+    "self": 19,
+    "shared": 4,
+    "short": 0,
+    "by_group": {
+     "Schools": 8,
+     "Places of worship": 7,
+     "Community halls": 1,
+     "Health": 5,
+     "Public services": 2
+    },
+    "lamps": 2146,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 21,
+    "lamp_groups_ok": 21,
+    "dark_nights": 0,
+    "road_km": 74.0,
+    "lamp_mwh_yr": 760.1,
+    "facility_mwh_yr": 5887,
+    "community_mwh_yr": 6647.1,
+    "co2_t_yr": 4919,
+    "roofs_used": 54,
+    "good_roofs_reserved": 43,
+    "good_roofs": 1443,
+    "surplus_mwh_yr": 59961.9,
+    "surplus_co2_t_yr": 44372,
+    "battery_kwh": 13352,
+    "yield_kwh_kwp": 1291.0,
+    "worst_month_share": 0.946,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 13.61,
+     "typical_kwh_kwp": 24.74
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "putra-heights",
+   "name": "Putra Heights",
+   "summary": {
+    "facilities": 16,
+    "self": 13,
+    "shared": 3,
+    "short": 0,
+    "by_group": {
+     "Schools": 4,
+     "Places of worship": 9,
+     "Community halls": 2,
+     "Health": 0,
+     "Public services": 1
+    },
+    "lamps": 3372,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 21,
+    "lamp_groups_ok": 21,
+    "dark_nights": 0,
+    "road_km": 117.2,
+    "lamp_mwh_yr": 1149.7,
+    "facility_mwh_yr": 956,
+    "community_mwh_yr": 2105.7,
+    "co2_t_yr": 1558,
+    "roofs_used": 59,
+    "good_roofs_reserved": 49,
+    "good_roofs": 3694,
+    "surplus_mwh_yr": 44948.1,
+    "surplus_co2_t_yr": 33262,
+    "battery_kwh": 10980,
+    "yield_kwh_kwp": 1290.6,
+    "worst_month_share": 0.946,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 13.61,
+     "typical_kwh_kwp": 24.73
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "nilai-impian",
+   "name": "Nilai Impian",
+   "summary": {
+    "facilities": 5,
+    "self": 4,
+    "shared": 1,
+    "short": 0,
+    "by_group": {
+     "Schools": 3,
+     "Places of worship": 2,
+     "Community halls": 0,
+     "Health": 0,
+     "Public services": 0
+    },
+    "lamps": 2821,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 22,
+    "lamp_groups_ok": 22,
+    "dark_nights": 0,
+    "road_km": 93.5,
+    "lamp_mwh_yr": 883.7,
+    "facility_mwh_yr": 570,
+    "community_mwh_yr": 1453.7,
+    "co2_t_yr": 1076,
+    "roofs_used": 34,
+    "good_roofs_reserved": 30,
+    "good_roofs": 916,
+    "surplus_mwh_yr": 43579.4,
+    "surplus_co2_t_yr": 32249,
+    "battery_kwh": 10708,
+    "yield_kwh_kwp": 1319.7,
+    "worst_month_share": 0.921,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 12.72,
+     "typical_kwh_kwp": 25.29
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "ainsdale",
+   "name": "Bandar Ainsdale",
+   "summary": {
+    "facilities": 0,
+    "self": 0,
+    "shared": 0,
+    "short": 0,
+    "by_group": {
+     "Schools": 0,
+     "Places of worship": 0,
+     "Community halls": 0,
+     "Health": 0,
+     "Public services": 0
+    },
+    "lamps": 1180,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 10,
+    "lamp_groups_ok": 10,
+    "dark_nights": 0,
+    "road_km": 42.4,
+    "lamp_mwh_yr": 392.7,
+    "facility_mwh_yr": 0,
+    "community_mwh_yr": 392.7,
+    "co2_t_yr": 291,
+    "roofs_used": 10,
+    "good_roofs_reserved": 10,
+    "good_roofs": 111,
+    "surplus_mwh_yr": 3523.6,
+    "surplus_co2_t_yr": 2607,
+    "battery_kwh": 3972,
+    "yield_kwh_kwp": 1314.8,
+    "worst_month_share": 0.921,
+    "wettest_week": {
+     "start": "2015-09-27",
+     "end": "2015-10-03",
+     "kwh_kwp": 12.66,
+     "typical_kwh_kwp": 25.2
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  },
+  {
+   "id": "pagoh",
+   "name": "Bandar Universiti Pagoh",
+   "summary": {
+    "facilities": 17,
+    "self": 6,
+    "shared": 9,
+    "short": 2,
+    "by_group": {
+     "Schools": 7,
+     "Places of worship": 7,
+     "Community halls": 0,
+     "Health": 1,
+     "Public services": 2
+    },
+    "lamps": 650,
+    "lamps_mapped_osm": 0,
+    "lamp_groups": 19,
+    "lamp_groups_ok": 19,
+    "dark_nights": 0,
+    "road_km": 24.3,
+    "lamp_mwh_yr": 236.2,
+    "facility_mwh_yr": 13201.9,
+    "community_mwh_yr": 13438.1,
+    "co2_t_yr": 9944,
+    "roofs_used": 141,
+    "good_roofs_reserved": 100,
+    "good_roofs": 309,
+    "surplus_mwh_yr": 9775.1,
+    "surplus_co2_t_yr": 7234,
+    "battery_kwh": 13179,
+    "yield_kwh_kwp": 1283.9,
+    "worst_month_share": 0.919,
+    "wettest_week": {
+     "start": "2017-12-30",
+     "end": "2018-01-05",
+     "kwh_kwp": 12.44,
+     "typical_kwh_kwp": 24.61
+    },
+    "record": {
+     "start": "2015-01-01",
+     "end": "2025-12-31",
+     "days": 4018
+    }
+   }
+  }
+ ]
+}

@@ -85,8 +85,8 @@ function List() {
   return (
     <>
       <PageHeader
-        title="Portfolios"
-        subtitle="One portfolio = one buyer and the group of roofs that supplies them · sample data"
+        title="Surplus buyers"
+        subtitle={<>Community needs come first (<Link to="/community" className="text-primary underline underline-offset-2">community plan</Link>). The good roofs left over supply local business buyers, and that income pays for the batteries and upkeep. One portfolio = one buyer · sample buyers</>}
         right={<button type="button" className="btn-primary !text-base" onClick={create}>+ New portfolio</button>}
       />
       <div className="card overflow-x-auto">
@@ -394,7 +394,7 @@ function PlanStep() {
                         <label htmlFor={`t-${t.id}`} className="flex-1 cursor-pointer py-2 text-sm">
                           {t.name}
                           <span className="block text-xs text-muted">
-                            <span className="num">{fmt(st.good)}</span> good roofs · {fmt(st.avgMwh, 1)} MWh/yr each · {t.state}
+                            <span className="num">{fmt(st.good)}</span> good roofs left after community · {fmt(st.avgMwh, 1)} MWh/yr each · {t.state}
                           </span>
                         </label>
                       </>

@@ -502,7 +502,9 @@
      "Google Open Buildings": 969,
      "Microsoft ML Buildings": 224
     },
-    "owners_for_1gwh": 24
+    "owners_for_1gwh": 24,
+    "community_reserved": 52,
+    "avg_mwh_surplus": 51.02
    }
   },
   {
@@ -907,7 +909,9 @@
      "OpenStreetMap": 31,
      "Microsoft ML Buildings": 20
     },
-    "owners_for_1gwh": 19
+    "owners_for_1gwh": 19,
+    "community_reserved": 8,
+    "avg_mwh_surplus": 97.76
    }
   },
   {
@@ -1167,7 +1171,9 @@
      "Google Open Buildings": 1033,
      "Microsoft ML Buildings": 895
     },
-    "owners_for_1gwh": 27
+    "owners_for_1gwh": 27,
+    "community_reserved": 139,
+    "avg_mwh_surplus": 43.82
    }
   },
   {
@@ -1453,7 +1459,9 @@
      "Microsoft ML Buildings": 118,
      "OpenStreetMap": 16
     },
-    "owners_for_1gwh": 35
+    "owners_for_1gwh": 35,
+    "community_reserved": 8,
+    "avg_mwh_surplus": 26.8
    }
   },
   {
@@ -1515,7 +1523,9 @@
      "Google Open Buildings": 951,
      "Microsoft ML Buildings": 340
     },
-    "owners_for_1gwh": 34
+    "owners_for_1gwh": 34,
+    "community_reserved": 43,
+    "avg_mwh_surplus": 41.56
    }
   },
   {
@@ -1907,7 +1917,9 @@
      "Google Open Buildings": 761,
      "Microsoft ML Buildings": 314
     },
-    "owners_for_1gwh": 77
+    "owners_for_1gwh": 77,
+    "community_reserved": 49,
+    "avg_mwh_surplus": 11.96
    }
   },
   {
@@ -2171,7 +2183,9 @@
      "Google Open Buildings": 1212,
      "OpenStreetMap": 108
     },
-    "owners_for_1gwh": 10
+    "owners_for_1gwh": 10,
+    "community_reserved": 30,
+    "avg_mwh_surplus": 48.96
    }
   },
   {
@@ -2367,7 +2381,9 @@
      "Microsoft ML Buildings": 110,
      "OpenStreetMap": 13
     },
-    "owners_for_1gwh": 19
+    "owners_for_1gwh": 19,
+    "community_reserved": 10,
+    "avg_mwh_surplus": 34.89
    }
   },
   {
@@ -2499,7 +2515,9 @@
      "Microsoft ML Buildings": 172,
      "Google Open Buildings": 21
     },
-    "owners_for_1gwh": 14
+    "owners_for_1gwh": 14,
+    "community_reserved": 100,
+    "avg_mwh_surplus": 40.53
    }
   }
  ]

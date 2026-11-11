@@ -1,14 +1,29 @@
 # LEGA OS
 
-**Rooftop solar leasing OS for Sime Darby Property townships.** Prototype for the SDP University Hackathon 2026, *Township of Tomorrow*, Planet theme.
+**Community solar OS for Sime Darby Property townships.** Prototype for the SDP University Hackathon 2026, *Township of Tomorrow*, Planet theme.
 
 **Live prototype:** https://khairul-kiddie.github.io/lega-os/
 
-SDP leases roofs in its townships, puts solar panels on them, and sells the power to nearby business buyers. The roofs are homes, shops, public buildings and industrial buildings across SDP townships, starting with City of Elmina. LEGA OS answers three questions:
+SDP leases roofs in its townships and puts solar panels on them. **The township comes first:** the roofs power its schools, places of worship, community halls and clinics, and keep every street lamp lit through the night. Only the power left over is sold to local businesses, and that income pays for the batteries and upkeep. LEGA OS answers four questions:
 
-1. **Which roofs should SDP lease?** Every roof gets a 0–100 score.
-2. **Which group of roofs covers a buyer's demand?** The portfolio builder sizes it, with a buffer for owners who back out.
-3. **How much can SDP safely promise each day?** A 14-day forecast with a P90 "safe to promise" amount, backtested on years the model never saw.
+1. **Which roofs?** Every roof in 9 SDP townships, from satellite footprints, gets a 0–100 score.
+2. **Can every community building run on solar?** The community plan matches each real school, surau, hall and clinic to its own roof, and to nearby roofs where that isn't enough.
+3. **Will the street lamps ever go dark?** Each lamp group gets roofs and a battery sized against 11 years of real weather, and a live 14-night forecast flags any group that needs action.
+4. **How much is left for businesses, and how much can SDP safely promise them?** The surplus builder sizes a buyer's portfolio from the roofs the community doesn't need, with a P90 "safe to promise" forecast.
+
+| Township | Community buildings powered | Street lamps kept lit | CO₂ avoided, t/yr | Surplus for businesses, GWh/yr |
+|---|---|---|---|---|
+| City of Elmina | 14 of 14 | 4,131 | 1,420 | 46.2 |
+| Elmina Business Park | none mapped | 238 | 46 | 4.9 |
+| Bandar Bukit Raja | 7 of 7 | 4,222 | 2,925 | 56.9 |
+| Serenia City | none mapped | 943 | 194 | 6.3 |
+| Ara Damansara | 23 of 23 | 2,146 | 4,919 | 60.0 |
+| Putra Heights | 16 of 16 | 3,372 | 1,558 | 44.9 |
+| Nilai Impian | 5 of 5 | 2,821 | 1,076 | 43.6 |
+| Bandar Ainsdale | none mapped | 1,180 | 291 | 3.5 |
+| Bandar Universiti Pagoh | 15 of 17 | 650 | 9,944 | 9.8 |
+
+Lamps are estimated from the road network. No lamp group went dark on any of the 4,018 nights from 2015 to 2025. CO₂ is calculated at 0.740 t/MWh, the Energy Commission's provisional 2024 grid emission factor for Peninsular Malaysia.
 
 ![Roof map: all SDP townships](docs/screenshots/1-roof-map.jpg)
 
@@ -36,8 +51,13 @@ SDP leases roofs in its townships, puts solar panels on them, and sells the powe
 | Usable panel area | Estimated | Share of the real footprint by roof type: 45% for pitched house roofs, 55–65% for flat roofs |
 | Shading, roof condition, owner type, likelihood to sign | **Sample** | Fixed seed per roof. The footprints have no building heights, so shading can't be computed yet |
 | Buyers: Innovation Park (1,800 MWh/yr, office hours), Elmina Lakeside Mall (2,400 MWh/yr, mall hours) | **Sample** | Example buyers, not real contracts |
-| Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit with the best City of Elmina roofs for the Innovation Park plan; editable |
+| Leasing pipeline statuses (signed / interested / …) | **Sample** | Seeded on first visit with the best City of Elmina roofs the community plan doesn't use, for the Innovation Park plan; community roofs are added from the Community plan and listed first; editable |
 | Roof facing, usable panel area, sun lost to shade | **Sample** | Derived from the synthetic roof attributes |
+| Community facilities: schools, kindergartens, masjid and surau, temples, halls, clinics, universities | **Real** | OpenStreetMap amenities via the Overpass API (ODbL), clipped to each township outline, cached in `pipeline/data/raw/community/`. Facilities missing from OpenStreetMap are missing here |
+| Road network for street lighting | **Real** | OpenStreetMap roads inside the outline (primary to residential) |
+| Street lamp count and positions | Estimated | OpenStreetMap maps very few lamps (50 in City of Elmina), so one LED lamp is placed every 30–40 m by road class (40–150 W, 12 h a night), plus park lamps by area. Replace with the council's lamp register |
+| Energy use per facility type | Placeholder | Typical annual figures (e.g. school 150 MWh, surau 18 MWh, clinic 30 MWh) and daylight shares. Replace with TNB bills or meters |
+| Grid emission factor | **Real** | Energy Commission of Malaysia, Grid Emission Factor 2022–2024 (provisional): Peninsular 2024, 0.740 t CO₂/MWh |
 | Usage pattern shares (office 95%, mall 70%, 24h 45%) | Placeholder | Replace with metered load profiles |
 | Resident app mock (lease income, panel status, street card) | Placeholder | Shown as `[X]`; its 7-day bars scale the live forecast to a 5.3 kWp home |
 
@@ -99,6 +119,24 @@ The work is precomputed by `python -m lega.townships`; the animation replays it,
 - Large flat roofs dominate the totals. Bukit Raja's largest roof inside its outline is an industrial building of about 31,500 m².
 - **Why typed labels.** An earlier version called every outline over 1,500 m² a "factory". In City of Elmina, 66 of those 98 "factories" were terrace blocks that OpenStreetMap draws as one outline, plus the Lakeside Mall, a school, a car park and a water tank. Labels now follow the mapped building type; City of Elmina has 21 industrial buildings, mostly in its south-east corner.
 
+## Community energy plan
+
+`python -m lega.community` builds the plan for each township; the **Community plan** screen shows it on satellite imagery.
+
+1. **Facilities.** Every school, kindergarten, university or college, masjid, surau, temple, community hall, clinic and public service mapped in OpenStreetMap inside the township outline. A place mapped twice (as a point and as an area) is counted once.
+2. **Own roof first.** A facility mapped as an area uses the roofs inside its grounds, taking only as many as it needs; a campus keeps the rest for others. A facility mapped as a point uses the roof under it.
+3. **Neighbours fill the gap.** The target is the **cloudiest month**, with the after-dark share of the load going through a battery (90% round trip). If the facility's own roof falls short, the nearest good roofs (score 75+) within 500 m are added. Roofs are picked "best fit": the smallest roof that covers what's left, so a 30,000 m² factory isn't spent on one surau.
+4. **Street lamps.** Lamps are grouped into ~700 m cells, one battery per group. Each group gets good roofs sized to 1.4× its average nightly need. Its battery is the smallest that, replayed day by day through 2015–2025 on the township's own NASA POWER weather, never lets a night go dark and keeps a 20% reserve. The screen compares this with a battery that holds only one night; the worst group in City of Elmina would then have gone dark on 246 nights.
+5. **Surplus.** Good roofs the plan doesn't use, plus what facility roofs make beyond their needs, go to business buyers. The pipeline writes `community_reserved` into the township index, so the **Surplus buyers** builder can't plan with community roofs. The leasing list puts community roofs first.
+
+**Lights-on forecast** (the Firming screen, *Street lamps* tab) runs the live 14-day P90 forecast through every City of Elmina lamp group. It shows each morning's battery charge and flags groups that would drop below the 20% reserve (dim after midnight) or run out (pre-charge from the grid). There is no live battery data yet, so the starting charge is a setting (full, 60%, 30%). The *Business buyers* tab is the original firming forecast for surplus buyers.
+
+**Caveats:**
+- Energy use per facility is a typical figure, not metered.
+- Lamp counts are estimates.
+- Facilities that OpenStreetMap hasn't mapped are missing: Serenia City and Bandar Ainsdale show none.
+- Moving power from a shared roof to a school, or from roofs to a lamp battery, needs a legal route, for example SDP-owned private wiring within the township, NEM, or CRESS. This needs confirming with the Energy Commission and the local council.
+
 ## Results
 
 ### Solar yield (sanity check passed)
@@ -142,6 +180,7 @@ lega-os/
     lega/nasa_power.py      NASA POWER daily download (cached in data/raw/)
     lega/simulate.py        pvlib yield simulation → yield.json
     lega/townships.py       township scans: footprints → solar-ready roofs → townships/*.json
+    lega/community.py       community plan: OSM facilities + roads → roofs, lamp batteries → community/*.json
     lega/scoring.py         roof score rules (40/20/20/20, likelihood to sign, "why" phrase)
     lega/forecast.py        LightGBM quantile models and backtest → forecast_backtest.json
     lega/live.py            Open-Meteo 16-day forecast → forecast_live.json (cached fallback)
@@ -222,6 +261,8 @@ enough_roofs   = sum(good_roofs in selected townships) ≥ roofs_needed
 - **NASA POWER:** Prediction Of Worldwide Energy Resources, NASA Langley Research Center. Free and open.
 - **Open-Meteo:** forecast, Historical Forecast and Previous Runs APIs. Free for non-commercial use under CC BY 4.0. **A commercial deployment needs a paid Open-Meteo plan.**
 - **pvlib:** open-source PV modelling library (BSD-3).
+- **OpenStreetMap / Overpass API:** community facilities and roads, © OpenStreetMap contributors (ODbL).
+- **Energy Commission of Malaysia:** Grid Emission Factor (GEF) in Malaysia 2022–2024 (provisional).
 - **Overture Maps buildings:** Open Database License (ODbL); it includes OpenStreetMap (ODbL), Google Open Buildings (CC BY 4.0 / ODbL) and Microsoft ML Building Footprints (ODbL). The derived township files keep the ODbL.
 - **Esri World Imagery:** © Esri, Maxar, Earthstar Geographics. Tiles are used with attribution for this non-commercial prototype; a commercial deployment needs an Esri (ArcGIS) licence or another imagery provider.
 - **OpenStreetMap / Nominatim:** township extents and place labels, © OpenStreetMap contributors (ODbL).

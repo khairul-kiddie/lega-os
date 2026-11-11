@@ -6,6 +6,7 @@ import type { YieldData } from '../lib/data'
 import { buildPlan, GOOD_SCORE, portfolioStore, SAMPLE_PORTFOLIO_ID } from '../lib/portfolio'
 import { leaseItemSat, leasingStore, useStore, type LeaseItem, type LeaseStatus } from '../lib/store'
 import { loadIndex, loadRoofs, roofHref, scannedStore } from '../lib/townships'
+import { communityRoofIds, loadCommunity } from '../lib/community'
 
 const STATUS: { id: LeaseStatus; label: string; cls: string }[] = [
   { id: 'to_approach', label: 'To approach', cls: 'bg-page text-ink' },
@@ -75,13 +76,16 @@ export default function Leasing() {
   }, [portfolios, scanned])
 
   const counts = Object.fromEntries(STATUS.map((s) => [s.id, items.filter((i) => i.status === s.id).length])) as Record<LeaseStatus, number>
-  const needed = target?.roofs ?? items.length
-  const ranked = [...items].sort((a, b) => b.score - a.score)
+  const isCommunity = (r: LeaseItem) => !!r.portfolioId?.startsWith('community-')
+  const nCommunity = items.filter(isCommunity).length
+  const needed = target ? target.roofs + nCommunity : items.length
+  // community roofs first: schools, surau and street lamps before business buyers
+  const ranked = [...items].sort((a, b) => Number(isCommunity(b)) - Number(isCommunity(a)) || b.score - a.score)
   const rows = ranked.map((r, i) => ({ r, rank: i + 1 })).filter(({ r }) => filter === 'all' || r.status === filter)
   const setStatus = (id: string, status: LeaseStatus) => leasingStore.set((l) => l.map((x) => (x.roofId === id ? { ...x, status } : x)))
   const sentNames = portfolios.filter((p) => p.status === 'Sent to leasing').map((p) => p.buyer)
   const allHomes = items.length > 0 && items.every((i) => i.home)
-  const subtitle = `${allHomes ? 'Homes' : 'Roofs'} to approach${sentNames.length === 1 ? ` for the ${sentNames[0]} portfolio` : ''}, best first · sample data`
+  const subtitle = `${allHomes ? 'Homes' : 'Roofs'} to approach${sentNames.length === 1 ? ` for ${nCommunity ? 'the community plan and ' : ''}the ${sentNames[0]} portfolio` : ''}, ${nCommunity ? 'community roofs first, then ' : ''}best first · sample data`
   const pct = (n: number) => `${Math.min(100, (n / Math.max(needed, 1)) * 100)}%`
 
   return (
@@ -155,7 +159,10 @@ export default function Leasing() {
                       <td className="px-2 py-3 num">{rank}</td>
                       <td className="px-2 py-3">
                         <Link to={roofHref(r.site, r.roofId)} className="font-semibold underline decoration-line underline-offset-4 hover:decoration-primary">{r.label}</Link>
-                        <div className="text-sm text-muted">{r.group}</div>
+                        <div className="text-sm text-muted">
+                          {r.group}
+                          {isCommunity(r) && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Community</span>}
+                        </div>
                       </td>
                       <td className="px-2 py-3 num">{r.score}</td>
                       <td className="px-2 py-3">{r.headline}</td>
@@ -203,7 +210,9 @@ async function loadSample() {
   const p = portfolioStore.get().find((x) => x.id === SAMPLE_PORTFOLIO_ID)
   const elmina = index.townships.find((t) => t.id === 'elmina')!
   const needed = (p && buildPlan(p, index, y, ['elmina'])?.roofsNeeded) || 60
-  const roofs = (await loadRoofs('elmina')).filter((r) => r.score >= GOOD_SCORE).sort((a, b) => b.score - a.score || b.kwp - a.kwp).slice(0, needed)
+  // community roofs are reserved first, so the business sample never takes them
+  const community = communityRoofIds(await loadCommunity('elmina'))
+  const roofs = (await loadRoofs('elmina')).filter((r) => r.score >= GOOD_SCORE && !community.has(r.id)).sort((a, b) => b.score - a.score || b.kwp - a.kwp).slice(0, needed)
   // deterministic mix: the best roofs were approached first, so more of them have progressed
   const status = (i: number): LeaseStatus => {
     const h = (i * 2654435761) % 100

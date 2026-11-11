@@ -93,9 +93,11 @@ export function newPortfolio(): Portfolio {
   }
 }
 
-/** Good-roof stats from a township scan; null until this browser has scanned it. */
+/** Good roofs left for business buyers once the community plan has taken its roofs; null until this browser has scanned the township. */
 export function townshipStats(t: Township, scanned: string[]): TownshipStats | null {
-  return scanned.includes(t.id) ? { good: t.summary.good_roofs, avgMwh: t.summary.avg_mwh_good } : null
+  if (!scanned.includes(t.id)) return null
+  const sm = t.summary
+  return { good: sm.good_roofs - (sm.community_reserved ?? 0), avgMwh: sm.avg_mwh_surplus ?? sm.avg_mwh_good }
 }
 
 export const monthlyShare = (y: YieldData) => {
