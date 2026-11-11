@@ -195,6 +195,9 @@ def run():
     for t in TOWNSHIPS:
         s, n, w, e = outline_bbox(outline(t))
         towns[t["id"]] = wettest_week((s + n) / 2, (w + e) / 2)
+    kulai = WEB_DATA / "kulai_layout.json"  # design-stage township: NASA POWER hourly, see kulai.py
+    if kulai.exists():
+        towns["kulai"] = json.loads(kulai.read_text())["daily"]
     data = {
         "sample": True,
         "note": "Load profiles are sample shapes until SDP has meter data. Solar shape, yield and wettest week: NASA POWER 2015-2025 + pvlib.",

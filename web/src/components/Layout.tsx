@@ -8,6 +8,7 @@ const NAV: { to: string; label: string; badge?: string }[] = [
   { to: '/planner', label: 'Community energy planner' },
   { to: '/leasing', label: 'Leasing list' },
   { to: '/firming', label: 'Lights-on forecast' },
+  { to: '/kulai', label: 'Plan a new township', badge: 'Kulai' },
   { to: '/insights', label: 'Model insights' },
 ]
 
@@ -36,6 +37,7 @@ function useContext(): [string, string] {
     return ['Township map', t ? `${t.name}, ${t.state}` : 'City of Elmina']
   }
   if (pathname.startsWith('/planner')) return ['Community energy planner', 'All SDP townships']
+  if (pathname.startsWith('/kulai')) return ['Design stage', 'Kulai, Johor (sample layout)']
   if (pathname.startsWith('/portfolio')) return ['Commercial buyers', 'Fund community projects']
   return ['Township', 'City of Elmina']
 }

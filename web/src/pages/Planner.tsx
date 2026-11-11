@@ -323,6 +323,7 @@ function Details() {
           <Field id="town" label="Township">
             <select id="town" className="input mt-1" value={form.township} onChange={(e) => set({ township: e.target.value })}>
               {cidx.townships.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {data.townships.kulai && <option value="kulai">Kulai, Johor (design stage)</option>}
             </select>
           </Field>
           <Field id="annual" label="Yearly use (kWh)" err={tried ? errors.annual : null}>
@@ -463,6 +464,7 @@ function PlanStep() {
 
   const prof = data.profiles[a.type]
   const town = tidx.townships.find((t) => t.id === a.township)
+  const townName = town?.name ?? (a.township === 'kulai' ? 'Kulai' : a.township)
   const roofKwp = roofKwpFor(tidx, a.township)
   const r = evaluate(a, data, roofKwp)
   const tw = data.townships[a.township] ?? data.townships.elmina
@@ -479,7 +481,7 @@ function PlanStep() {
             : `In a P90 wettest week (${fmt(tw.p90_kwh_kwp_day, 2)} kWh/kWp a day), add ${fmt(extraKwp, 1)} kWp of solar to stay on all 7 days.` }
       : { ok: true, title: 'No battery needed', text: 'Night use comes from the grid, offset by daytime export.' },
     { ok: r.leased_roofs <= goodLeft, title: r.leased_roofs ? `${r.leased_roofs} leased roof${r.leased_roofs > 1 ? 's' : ''} needed` : 'Fits on its own roof',
-      text: r.leased_roofs ? `${fmt(goodLeft)} good roofs are free in ${town?.name ?? 'this township'} after the community plan.` : `${fmt(a.ownRoofKwp)} kWp usable on its own roof.` },
+      text: r.leased_roofs ? `${fmt(goodLeft)} good roofs are free in ${townName} after the community plan.` : `${fmt(a.ownRoofKwp)} kWp usable on its own roof.` },
     { ok: !r.battery_kwh || a.ownership === 'sdp' ? true : 'warn', title: a.ownership === 'sdp' ? 'Owned by SDP' : `${OWNERSHIP_INFO[a.ownership].label} building`,
       text: a.ownership === 'sdp' ? 'Behind the meter on SDP property: SDP owns the panels and battery.' : r.battery_kwh ? 'Needs the building owner’s agreement; SDP can only own batteries on its own property.' : 'Solar under a lease with the owner.' },
   ]
@@ -489,7 +491,7 @@ function PlanStep() {
     const have = new Set(leasing.map((l) => l.roofId))
     const reserved = new Set(leasing.filter((l) => l.portfolioId?.startsWith('community-')).map((l) => l.roofId))
     const pick = roofs.filter((x) => x.score >= 75 && !have.has(x.id) && !reserved.has(x.id)).sort((p, q) => q.score - p.score).slice(0, r.leased_roofs)
-    const items: LeaseItem[] = pick.map((x) => leaseItemSat(x, town?.name ?? a.township, PLANNER_PORTFOLIO(a.id)))
+    const items: LeaseItem[] = pick.map((x) => leaseItemSat(x, townName, PLANNER_PORTFOLIO(a.id)))
     leasingStore.set((l) => [...items, ...l])
     update({ status: 'Sent to leasing' })
     setSent(items.length)
@@ -501,7 +503,7 @@ function PlanStep() {
 
   return (
     <>
-      <PageHeader title={a.name} subtitle={`${prof.label} · ${town?.name ?? a.township} · ${GOAL_INFO[a.goal].label}${outage ? ` · ${a.backupHours} h backup` : ''}`}
+      <PageHeader title={a.name} subtitle={`${prof.label} · ${townName} · ${GOAL_INFO[a.goal].label}${outage ? ` · ${a.backupHours} h backup` : ''}`}
         right={<Link to={`/planner/${a.id}/details`} className="btn-ghost">Edit details</Link>} />
       <Stepper step={2} />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -514,7 +516,7 @@ function PlanStep() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <section className="card p-6" aria-labelledby="day-h">
           <h2 id="day-h" className="text-lg font-semibold">A typical day: solar vs use</h2>
-          <p className="text-sm text-muted">Average day in {town?.name ?? 'the township'}: solar from NASA POWER + pvlib, use from the sample {prof.label.toLowerCase()} profile.</p>
+          <p className="text-sm text-muted">Average day in {townName}: solar from NASA POWER + pvlib, use from the sample {prof.label.toLowerCase()} profile.</p>
           <DayChart solar={data.solar_shape} kwp={r.kwp} yieldKwhKwp={tw.specific_yield} kw={prof.kw.map((v) => v * (a.annualKwh / prof.typical_kwh))}
             em={outage && prof.emergency_kw ? prof.emergency_kw.map((v) => v * (a.annualKwh / prof.typical_kwh)) : undefined} />
           <h3 className="mt-6 text-sm font-semibold">Monthly cover of the building’s use</h3>
