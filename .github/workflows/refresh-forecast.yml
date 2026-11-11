@@ -23,14 +23,16 @@ jobs:
         working-directory: pipeline
       - run: python -m lega.live
         working-directory: pipeline
+      - run: python -m lega.battery
+        working-directory: pipeline
       - name: Commit and redeploy if changed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "lega-bot"
           git config user.email "lega-bot@users.noreply.github.com"
-          git add web/public/data/forecast_live.json
+          git add web/public/data/forecast_live.json web/public/data/battery_72h.json
           if git diff --cached --quiet; then echo "no change"; exit 0; fi
-          git commit -m "Refresh live 14-day forecast"
+          git commit -m "Refresh live 14-day and 72-hour forecasts"
           git push
           gh workflow run deploy.yml
