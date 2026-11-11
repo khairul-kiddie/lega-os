@@ -87,18 +87,18 @@ function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
               <input type="checkbox" className="h-5 w-5 accent-primary" checked={flood} onChange={(e) => setFlood(e.target.checked)} />Flood zone
             </label>
           </div>
-          <svg viewBox={`-6 -6 ${W + 12} ${H + 12}`} className="w-full rounded-lg bg-[#EEF1EA]" role="img" aria-label="Kulai sample layout with plots coloured by yearly solar">
+          <svg viewBox={`-6 -24 ${W + 12} ${H + 30}`} className="w-full rounded-lg bg-[#EEF1EA]" role="img" aria-label="Kulai sample layout with plots coloured by yearly solar">
             {flood && (
               <g>
                 <rect x={0} y={H - l.site.flood_y} width={W} height={l.site.flood_y} fill="#9CC5E0" opacity={0.45} />
                 <path d={`M0 ${H - 25} C ${W * 0.3} ${H - 55}, ${W * 0.6} ${H + 5}, ${W} ${H - 35}`} stroke="#4C8DB8" strokeWidth={9} fill="none" opacity={0.7} />
-                <text x={12} y={H - l.site.flood_y + 22} fontSize={10} fill="#2F6A91">Flood-risk strip (sample)</text>
+                <text x={12} y={H - l.site.flood_y + 14} fontSize={10} fill="#2F6A91" stroke="#DCEBF4" strokeWidth={3} paintOrder="stroke">Flood-risk strip (sample)</text>
               </g>
             )}
             {l.phases.map((p) => (
               <g key={p.id}>
                 <rect x={p.x[0] - 4} y={6} width={p.x[1] - p.x[0] + 8} height={H - 12} fill="none" stroke="#5B655F" strokeDasharray="6 5" strokeWidth={1.2} />
-                <text x={p.x[0] + 2} y={20} fontSize={13} fontWeight={600} fill="#15201B">{p.name}</text>
+                <text x={p.x[0] - 2} y={-6} fontSize={13} fontWeight={600} fill="#15201B">{p.name}</text>
               </g>
             ))}
             {l.plots.map((p) => {
@@ -114,7 +114,8 @@ function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
               <g key={c.id}>
                 <rect x={c.x - c.w / 2} y={H - c.y - c.d / 2} width={c.w} height={c.d} fill={c.flood_zone && flood ? '#A33A12' : '#15201B'} rx={4} />
                 <text x={c.x} y={H - c.y + 5} fontSize={12} textAnchor="middle" fill="#FFFFFF" fontWeight={700}>{COMMUNITY_ICON[c.type]}</text>
-                <text x={c.x} y={H - c.y - c.d / 2 - 4} fontSize={9} textAnchor="middle" fill="#15201B">{c.name.replace(' Sample', '')}</text>
+                <text x={c.x} y={c.type === 'battery' ? H - c.y - c.d / 2 - 4 : H - c.y + c.d / 2 + 11} fontSize={9} textAnchor="middle"
+                  fill="#15201B" stroke="#EEF1EA" strokeWidth={3} paintOrder="stroke">{c.type === 'battery' ? 'Shared battery' : c.name.replace(' Sample', '')}</text>
               </g>
             ))}
           </svg>

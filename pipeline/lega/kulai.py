@@ -38,9 +38,9 @@ PHASES = [
 ]
 COMMUNITY = [
     {"id": "C1", "type": "school", "name": "SK Kulai Sample", "phase": 1, "x": 100, "y": 395, "w": 70, "d": 34, "footprint_m2": 4200},
-    {"id": "C2", "type": "hall", "name": "Dewan Komuniti Kulai (PPS)", "phase": 2, "x": 275, "y": 395, "w": 46, "d": 30, "footprint_m2": 1600},
+    {"id": "C2", "type": "hall", "name": "Dewan Komuniti Kulai (PPS)", "phase": 2, "x": 282, "y": 392, "w": 46, "d": 30, "footprint_m2": 1600},
     {"id": "C3", "type": "surau", "name": "Surau Kulai Sample", "phase": 3, "x": 492, "y": 30, "w": 30, "d": 24, "footprint_m2": 700},
-    {"id": "C4", "type": "battery", "name": "Shared battery site", "phase": 2, "x": 330, "y": 395, "w": 22, "d": 18, "footprint_m2": 0},
+    {"id": "C4", "type": "battery", "name": "Shared battery site", "phase": 2, "x": 352, "y": 385, "w": 22, "d": 18, "footprint_m2": 0},
 ]
 
 
