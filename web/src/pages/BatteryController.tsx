@@ -84,7 +84,7 @@ function Controller({ data, pd }: { data: BatteryData; pd: PlannerData }) {
         <Tile label="Supplied by own solar + battery" value={`${Math.round(own * 100)}%`} hint="of the building’s use over 72 hours" />
         <Tile label="Grid import" value={`${fmt(imp)} kWh`} hint={stormFrom >= 0 ? 'includes topping up before the storm' : 'when the battery is at its reserve'} />
         <Tile label="Exported" value={`${fmt(exp)} kWh`} hint="spare solar, credited on the bill" />
-        <Tile label="If the grid fails now" value={failNow === null ? '72 h +' : `${fmt(failNow)} h`} hint={`stays on at ${fmt(crit[0], 1)} kW critical load${site.type === 'hall' ? ' (emergency mode)' : ''}`} strong />
+        <Tile label={`If the grid fails at ${hourLabel(w.time[0])}`} value={failNow === null ? '72 h +' : `${fmt(failNow)} h`} hint={`stays on at ${fmt(crit[0], 1)} kW critical load${site.type === 'hall' ? ' (emergency mode)' : ''}`} strong />
       </div>
 
       <section className="card p-6" aria-labelledby="chart-h">

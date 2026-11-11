@@ -21,6 +21,7 @@ CASES = WEB_DATA.parents[2] / "shared" / "battery_cases.json"
 URL = "https://api.open-meteo.com/v1/forecast"
 PV_DERATE = 0.86 * 0.96          # system losses x inverter (PVWatts-style, flat-ish roof)
 HOURS = 72
+START_HOUR = 8                   # window starts at 08:00 MYT today
 RESERVE, STORM_RESERVE = 0.30, 1.00
 STORM_MM_H, STORM_LOOKAHEAD = 10.0, 24
 EFF = 0.95                       # one-way charge / discharge efficiency
@@ -98,8 +99,9 @@ def fetch_live():
     r.raise_for_status()
     h = r.json()["hourly"]
     from zoneinfo import ZoneInfo
-    now = datetime.now(ZoneInfo(SITE["tz"])).strftime("%Y-%m-%dT%H:00")
-    i = h["time"].index(now) if now in h["time"] else 0
+    # the chart always opens at 08:00 today (Malaysia time), at the start of the solar day
+    start = datetime.now(ZoneInfo(SITE["tz"])).strftime(f"%Y-%m-%dT{START_HOUR:02d}:00")
+    i = h["time"].index(start) if start in h["time"] else 0
     sl = slice(i, i + HOURS)
     return {"time": h["time"][sl], "pv_kw_per_kwp": [round(g / 1000 * PV_DERATE, 3) for g in h["shortwave_radiation"][sl]],
             "rain_mm": [round(x or 0, 1) for x in h["precipitation"][sl]], "cloud_pct": h["cloud_cover"][sl]}
@@ -157,7 +159,8 @@ def run():
             print("keeping the cached file")
             return
         status = "synthetic"
-        w = synthetic(datetime.now().strftime("%Y-%m-%dT%H:00"))
+        from zoneinfo import ZoneInfo
+        w = synthetic(datetime.now(ZoneInfo(SITE["tz"])).strftime(f"%Y-%m-%dT{START_HOUR:02d}:00"))
     data = {
         "sample": True, "status": status, "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M+00:00"),
         "source": "Open-Meteo hourly forecast (shortwave radiation, precipitation), City of Elmina" if status == "live" else "synthetic profile",
