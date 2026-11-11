@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Kpi, PageHeader, Segmented } from '../components/ui'
+import Overview from '../components/Overview'
 import SatMap, { SAT_COLORS, type ScanSweep } from '../components/SatMap'
 import TownshipsMap from '../components/TownshipsMap'
 import { fmt, useJson } from '../lib/data'
@@ -64,7 +65,7 @@ export default function RoofMap() {
 
 function useBuildPortfolio() {
   const navigate = useNavigate()
-  return () => navigate('/portfolio/new/details')
+  return () => navigate('/planner/new/details')
 }
 
 /* ---------------- Level 0: all townships ---------------- */
@@ -83,8 +84,9 @@ function AllTownships({ index, groups, scanned, selected, onPick }: { index: Tow
         eyebrow="All SDP townships"
         title="Roof map"
         subtitle="Every SDP township on one map · pick one to scan or open its results · roof scores are sample data"
-        right={<button type="button" className="btn-primary !text-base" onClick={build}>Build portfolio</button>}
+        right={<button type="button" className="btn-primary !text-base" onClick={build}>Plan a community asset</button>}
       />
+      <Overview />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="Townships" value={groups.length} />
         <Kpi label="Scanned" value={done.length} unit={`of ${groups.length}`} />
@@ -376,7 +378,7 @@ function TownshipView({ group, sites, site, scanned, index, onSite, onAll, onSca
             {sites.length > 1 && (
               <Segmented label="Site" value={site.id} onChange={onSite} options={sites.map((m) => ({ id: m.id, label: m.site ?? m.name }))} />
             )}
-            <button type="button" className="btn-primary !text-base" onClick={build}>Build portfolio</button>
+            <button type="button" className="btn-primary !text-base" onClick={build}>Plan a community asset</button>
           </>
         }
       />

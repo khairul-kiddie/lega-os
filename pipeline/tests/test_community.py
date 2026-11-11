@@ -25,7 +25,7 @@ def test_facilities_are_inside_the_township(tid):
 @pytest.mark.parametrize("tid", [t["id"] for t in INDEX["townships"]])
 def test_no_roof_is_promised_twice(tid):
     p = load(tid)
-    used = [r for f in p["facilities"] for r in f["own_roofs"] + f["shared_roofs"]] + [r for g in p["lamp_groups"] for r in g["roofs"]]
+    used = [r for f in p["facilities"] for r in f["own_roofs"] + f["shared_roofs"]]
     assert len(used) == len(set(used))
     roofs = set(json.loads((WEB_DATA / "townships" / f"{tid}.json").read_text())["id"])
     assert set(used) <= roofs
@@ -38,7 +38,7 @@ def test_street_lamps_never_go_dark(tid):
             continue
         assert g["dark_nights"] == 0, g["id"]
         assert g["lowest_pct"] >= 19, f"{g['id']} dips below the 20% reserve"
-        assert g["kwp"] >= g["kwp_need"] * 0.999
+        assert "roofs" not in g, "street lamps are standalone: they never take roofs"
 
 
 @pytest.mark.parametrize("tid", [t["id"] for t in INDEX["townships"]])

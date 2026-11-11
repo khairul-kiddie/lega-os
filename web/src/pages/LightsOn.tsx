@@ -90,7 +90,7 @@ export default function LightsOn() {
         <p>
           <span className="font-semibold">City of Elmina street lamps</span> · <span className="num">{fmt(lamps)}</span> lamps in {runs.length} groups ·{' '}
           <span className="num">{fmt(cap)}</span> kWh of usable battery · from the{' '}
-          <Link to="/community?t=elmina" className="text-primary underline underline-offset-2">community plan</Link>
+          <Link to="/planner/map?t=elmina" className="text-primary underline underline-offset-2">community plan</Link>
         </p>
         <label className="flex items-center gap-2 text-muted">
           Battery charge tonight

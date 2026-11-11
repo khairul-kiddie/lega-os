@@ -7,9 +7,11 @@ Lamps:      OpenStreetMap barely maps street lamps in Malaysia, so lamps are EST
             road network inside the outline: one LED lamp every 30-40 m depending on road class.
             Parks get lamps by area.
 Loads:      typical annual use per facility type (PLACEHOLDER until SDP has TNB bills or meters).
-Roofs:      a facility first uses roofs inside its own grounds; any gap is filled by the nearest good
-            roofs (score 75+). Each lamp group is fed by the nearest good roofs and a battery.
-Never dark: each lamp group's battery is sized so that, replayed over 11 years of real daily weather
+Roofs:      a facility first uses roofs inside its own grounds; any gap is filled by nearby good roofs
+            (score 75+) leased under CREAM. That power reaches the facility over TNB's wires.
+Lamps:      standalone solar street lamps, each with its own panel and battery (lamps run at night, so
+            rooftop solar can't serve them). They take no roofs.
+Never dark: the lamp panel and battery are sized so that, replayed over 11 years of real daily weather
             (NASA POWER 2015-2025, pvlib), no night would have gone dark.
 
 Output: web/public/data/community/index.json and one <id>.json per township.
@@ -62,6 +64,8 @@ LAMP_ROADS = {
 }
 PARK_M2_PER_LAMP, PARK_LAMP_W, PARK_MAX_LAMPS = 800, 40, 150
 LAMP_HOURS = 12          # 7 pm to 7 am
+DIM_HOURS, DIM_LEVEL = 4, 0.5  # dimmed to 50% from 1 am to 5 am, as solar street lamps usually are
+LAMP_FULL_HOURS = LAMP_HOURS - DIM_HOURS * (1 - DIM_LEVEL)  # 10 full-power hours a night
 GROUP_CELL_M = 700       # lamps are grouped into ~700 m cells, one battery per group
 BATT_EFF = 0.90          # round trip
 BATT_DOD = 0.90          # usable share of nominal capacity
@@ -340,7 +344,8 @@ def plan(t: dict) -> dict:
             "surplus_mwh": round(max(0.0, own_mwh - need), 1),
         })
 
-    # 2. street lamps: group, size solar + battery, feed from nearest remaining good roofs
+    # 2. street lamps: standalone solar lamps (panel + battery on every pole). They run at night, so
+    #    rooftop solar can't feed them directly; they never take roofs from the plan.
     pts, road_m, mapped = lamp_points(els, polys, kx)
     cells: dict[tuple[int, int], list] = {}
     for p in pts:
@@ -351,25 +356,21 @@ def plan(t: dict) -> dict:
     for gi, key in enumerate(sorted(cells, key=lambda k: (-k[1], k[0]))):
         ps = cells[key]
         c = (sum(p[0] for p in ps) / len(ps), sum(p[1] for p in ps) / len(ps))
-        load = sum(p[2] for p in ps) * LAMP_HOURS / 1000  # kWh per night
-        kwp_need = LAMP_PV_OVERSIZE * load / (y.mean() * BATT_EFF)
-        free = [r for r in R if r["id"] not in taken and r["score"] >= GOOD]
-        near = [r for r in free if dist(r["c"], c) <= NEIGHBOUR_M]
-        if sum(r["kwp"] for r in near) < kwp_need:  # not enough close by: widen to the nearest roofs anywhere
-            near = sorted(free, key=lambda r: dist(r["c"], c))[: len(near) + 20]
-        fed = best_fit(near, kwp_need, lambda r: r["kwp"])
-        kwp = sum(r["kwp"] for r in fed)
-        taken |= {r["id"] for r in fed}
-        b = size_battery(load, kwp, y) if kwp > 0 else {"usable": None}
+        load = sum(p[2] for p in ps) * LAMP_FULL_HOURS / 1000  # kWh per night, whole group
+        kwp = LAMP_PV_OVERSIZE * load / (y.mean() * BATT_EFF)  # sum of the poles' own panels
+        b = size_battery(load, kwp, y)
         if b["usable"] is not None:
             socs_all.append(b.pop("socs") / b["usable"])
+        n = len(ps)
         lamps.append({
-            "id": f"L{gi + 1:02d}", "lat": round(c[1], 6), "lon": round(c[0], 6), "lamps": len(ps),
+            "id": f"L{gi + 1:02d}", "lat": round(c[1], 6), "lon": round(c[0], 6), "lamps": n,
             "park_lamps": sum(p[3] == "park" for p in ps), "night_kwh": round(load, 1),
-            "kwp_need": round(kwp_need, 1), "kwp": round(kwp, 1), "roofs": [r["id"] for r in fed],
+            "kwp_need": round(kwp, 2), "kwp": round(kwp, 2),
+            "lamp_w": round(sum(p[2] for p in ps) / n), "panel_wp": round(kwp * 1000 / n),
+            "battery_wh_per_lamp": round((b.get("nominal") or 0) * 1000 / n),
             "battery_kwh": b.get("nominal"), "battery_usable_kwh": b.get("usable"), "dark_nights": b.get("dark"),
             "lowest_pct": b.get("low_pct"), "lowest_date": dates[b["low_i"]] if b.get("usable") else None,
-            "one_night_dark": b.get("one_night_dark"), "ok": bool(b.get("usable")) and kwp >= kwp_need * 0.999,
+            "one_night_dark": b.get("one_night_dark"), "ok": bool(b.get("usable")),
         })
 
     # wettest stretch for the story: the 7 days with the least sun in the record
@@ -443,7 +444,7 @@ def run():
         "facility_source": "OpenStreetMap amenities via Overpass API (ODbL)",
         "loads": {k: {"label": v["label"], "mwh": v["mwh"], "day": v["day"]} for k, v in FACILITY.items()},
         "lamp_roads": {k: {"spacing_m": s, "watts": wt} for k, (s, wt) in LAMP_ROADS.items()},
-        "lamp_hours": LAMP_HOURS, "battery_eff": BATT_EFF, "battery_dod": BATT_DOD, "lamp_pv_oversize": LAMP_PV_OVERSIZE,
+        "lamp_hours": LAMP_HOURS, "dim_hours": DIM_HOURS, "dim_level": DIM_LEVEL, "lamp_full_hours": LAMP_FULL_HOURS, "battery_eff": BATT_EFF, "battery_dod": BATT_DOD, "lamp_pv_oversize": LAMP_PV_OVERSIZE,
         "neighbour_m": NEIGHBOUR_M, "good_score": GOOD,
         "townships": index}, indent=1, ensure_ascii=False, default=_np))
     # community first: tell the business portfolio builder which good roofs are already taken

@@ -5,10 +5,9 @@ import type { TownshipIndex } from '../lib/townships'
 
 const NAV: { to: string; label: string; badge?: string }[] = [
   { to: '/map', label: 'Roof map' },
-  { to: '/community', label: 'Community plan' },
-  { to: '/firming', label: 'Lights-on forecast' },
-  { to: '/portfolio', label: 'Surplus buyers' },
+  { to: '/planner', label: 'Community energy planner' },
   { to: '/leasing', label: 'Leasing list' },
+  { to: '/firming', label: 'Lights-on forecast' },
   { to: '/insights', label: 'Model insights' },
 ]
 
@@ -32,11 +31,12 @@ function useContext(): [string, string] {
     const t = data?.townships.find((x) => x.id === params.get('t'))
     return t ? ['Township', `${t.name}, ${t.state}`] : ['Roof map', 'All SDP townships']
   }
-  if (pathname.startsWith('/community')) {
+  if (pathname.startsWith('/planner/map')) {
     const t = data?.townships.find((x) => x.id === (params.get('t') ?? 'elmina'))
-    return ['Community plan', t ? `${t.name}, ${t.state}` : 'City of Elmina']
+    return ['Township map', t ? `${t.name}, ${t.state}` : 'City of Elmina']
   }
-  if (pathname.startsWith('/portfolio')) return ['Surplus buyers', 'All SDP townships']
+  if (pathname.startsWith('/planner')) return ['Community energy planner', 'All SDP townships']
+  if (pathname.startsWith('/portfolio')) return ['Commercial buyers', 'Fund community projects']
   return ['Township', 'City of Elmina']
 }
 

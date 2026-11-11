@@ -503,8 +503,8 @@
      "Microsoft ML Buildings": 224
     },
     "owners_for_1gwh": 24,
-    "community_reserved": 52,
-    "avg_mwh_surplus": 51.02
+    "community_reserved": 15,
+    "avg_mwh_surplus": 51.95
    }
   },
   {
@@ -910,8 +910,8 @@
      "Microsoft ML Buildings": 20
     },
     "owners_for_1gwh": 19,
-    "community_reserved": 8,
-    "avg_mwh_surplus": 97.76
+    "community_reserved": 0,
+    "avg_mwh_surplus": 88.95
    }
   },
   {
@@ -1172,8 +1172,8 @@
      "Microsoft ML Buildings": 895
     },
     "owners_for_1gwh": 27,
-    "community_reserved": 139,
-    "avg_mwh_surplus": 43.82
+    "community_reserved": 100,
+    "avg_mwh_surplus": 47.1
    }
   },
   {
@@ -1460,8 +1460,8 @@
      "OpenStreetMap": 16
     },
     "owners_for_1gwh": 35,
-    "community_reserved": 8,
-    "avg_mwh_surplus": 26.8
+    "community_reserved": 0,
+    "avg_mwh_surplus": 27.65
    }
   },
   {
@@ -1524,8 +1524,8 @@
      "Microsoft ML Buildings": 340
     },
     "owners_for_1gwh": 34,
-    "community_reserved": 43,
-    "avg_mwh_surplus": 41.56
+    "community_reserved": 22,
+    "avg_mwh_surplus": 41.84
    }
   },
   {
@@ -1918,8 +1918,8 @@
      "Microsoft ML Buildings": 314
     },
     "owners_for_1gwh": 77,
-    "community_reserved": 49,
-    "avg_mwh_surplus": 11.96
+    "community_reserved": 11,
+    "avg_mwh_surplus": 12.78
    }
   },
   {
@@ -2184,8 +2184,8 @@
      "OpenStreetMap": 108
     },
     "owners_for_1gwh": 10,
-    "community_reserved": 30,
-    "avg_mwh_surplus": 48.96
+    "community_reserved": 8,
+    "avg_mwh_surplus": 49.61
    }
   },
   {
@@ -2382,8 +2382,8 @@
      "OpenStreetMap": 13
     },
     "owners_for_1gwh": 19,
-    "community_reserved": 10,
-    "avg_mwh_surplus": 34.89
+    "community_reserved": 0,
+    "avg_mwh_surplus": 38.6
    }
   },
   {
@@ -2516,8 +2516,8 @@
      "Google Open Buildings": 21
     },
     "owners_for_1gwh": 14,
-    "community_reserved": 100,
-    "avg_mwh_surplus": 40.53
+    "community_reserved": 77,
+    "avg_mwh_surplus": 39.91
    }
   }
  ]

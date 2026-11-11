@@ -85,8 +85,9 @@ function List() {
   return (
     <>
       <PageHeader
-        title="Surplus buyers"
-        subtitle={<>Community needs come first (<Link to="/community" className="text-primary underline underline-offset-2">community plan</Link>). The good roofs left over supply local business buyers, and that income pays for the batteries and upkeep. One portfolio = one buyer · sample buyers</>}
+        eyebrow="Community energy planner · funding"
+        title="Commercial buyers"
+        subtitle={<>Community buildings come first (<Link to="/planner" className="text-primary underline underline-offset-2">community energy planner</Link>). The good roofs left over supply local businesses, and SDP’s margin pays for the community batteries and upkeep. One portfolio = one buyer · sample buyers</>}
         right={<button type="button" className="btn-primary !text-base" onClick={create}>+ New portfolio</button>}
       />
       <div className="card overflow-x-auto">
@@ -238,7 +239,7 @@ function Details() {
         </fieldset>
 
         <div className="flex justify-between gap-2">
-          <Link to="/portfolio" className="btn-ghost">Cancel</Link>
+          <Link to="/planner" className="btn-ghost">Cancel</Link>
           <button type="submit" className="btn-primary">Continue</button>
         </div>
       </form>

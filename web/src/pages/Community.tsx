@@ -29,7 +29,7 @@ const EVENTS: Record<string, string> = {
 }
 const eventFor = (iso: string) => EVENTS[iso.slice(0, 7)]
 
-export default function Community() {
+export default function Community({ embedded = false }: { embedded?: boolean }) {
   const { data: cidx, error } = useJson<CommunityIndex>('community/index.json')
   const { data: tidx } = useJson<TownshipIndex>('townships/index.json')
   const [params, setParams] = useSearchParams()
@@ -74,8 +74,8 @@ export default function Community() {
   return (
     <>
       <PageHeader
-        eyebrow="Community first"
-        title="Community energy plan"
+        eyebrow={embedded ? 'Community energy planner' : 'Community first'}
+        title={embedded ? 'Township map' : 'Community energy plan'}
         subtitle="Every school, surau, hall and clinic powered by the township’s own roofs, and every street lamp kept lit, before any power is sold to businesses."
         right={
           cidx && (
@@ -94,8 +94,8 @@ export default function Community() {
         <>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi label="Community buildings powered" value={`${powered} of ${s.facilities}`}
-              hint={s.facilities ? `${s.self} from their own roof, ${s.shared} sharing nearby roofs` : 'No facilities mapped in OpenStreetMap here yet'} />
-            <Kpi label="Street lamps kept lit" value={fmt(s.lamps)} hint={`${s.dark_nights === 0 ? 'No dark nights' : `${fmt(s.dark_nights)} dark nights`} in 11 years of real weather · ${fmt(s.road_km)} km of road`} />
+              hint={s.facilities ? `${s.self} from their own roof, ${s.shared} with nearby leased roofs` : 'No facilities mapped in OpenStreetMap here yet'} />
+            <Kpi label="Street lamps kept lit" value={fmt(s.lamps)} hint={`Standalone solar lamps · ${s.dark_nights === 0 ? 'no dark nights' : `${fmt(s.dark_nights)} dark nights`} in 11 years of real weather`} />
             <Kpi label="CO₂ avoided" value={fmt(s.co2_t_yr)} unit="t / yr" hint={`${fmt(s.community_mwh_yr)} MWh a year of community power off the grid`} />
             <Kpi label="Left over for local businesses" value={fmt(s.surplus_mwh_yr / 1000, 1)} unit="GWh / yr" hint="Sold to fund batteries, upkeep and the next township" />
           </div>
@@ -107,9 +107,8 @@ export default function Community() {
                 {(['self', 'shared', 'short'] as const).map((k) => (
                   <li key={k} className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border-2 border-white" style={{ background: STATUS_INFO[k].color }} />{STATUS_INFO[k].label}</li>
                 ))}
-                <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border border-ink" style={{ background: MAP_COLORS.lamp }} />Lamp group (size = lamps)</li>
+                <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full border border-ink" style={{ background: MAP_COLORS.lamp }} />Solar street lamps (size = lamps)</li>
                 <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm" style={{ background: MAP_COLORS.facilityRoof }} />Roof powering a facility</li>
-                <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm" style={{ background: MAP_COLORS.lampRoof }} />Roof charging lamps</li>
               </ul>
             </section>
             <Detail plan={plan} selected={selected} roofs={roofs} />
@@ -123,10 +122,10 @@ export default function Community() {
               <h2 id="next-h" className="text-lg font-semibold">From plan to rooftops</h2>
               <p className="mt-1 text-[15px] text-muted">
                 This plan uses <span className="num font-semibold text-ink">{fmt(s.roofs_used)}</span> roofs, {fmt(s.good_roofs_reserved)} of them from the
-                township’s {fmt(s.good_roofs)} good roofs. The other good roofs make about{' '}
+                township’s {fmt(s.good_roofs)} good roofs (street lamps carry their own panels). The other good roofs make about{' '}
                 <span className="num font-semibold text-ink">{fmt(s.surplus_mwh_yr / 1000, 1)} GWh</span> a year for{' '}
                 <Link to="/portfolio" className="text-primary underline underline-offset-2">local business buyers</Link>, and that income pays for the
-                batteries and upkeep. Community roofs are reserved first, so business plans can’t take them.
+                batteries and upkeep. Community roofs are reserved first, so business plans can’t take them. Power from a leased roof reaches a building over TNB’s wires; SDP owns the panels and batteries on its own property.
               </p>
             </div>
             <div className="flex flex-col items-start gap-2 lg:items-end">
@@ -180,17 +179,18 @@ function Detail({ plan, selected, roofs }: { plan: CommunityPlan; selected: stri
         <p className="label">Street lamps</p>
         <h2 className="mt-1 text-xl font-semibold">Lamp group {g.id}</h2>
         <span className={`mt-3 inline-block rounded-full px-3 py-1 text-sm font-medium ${g.ok ? 'bg-primary text-white' : 'bg-[#F6E1D8] text-warn'}`}>
-          {g.ok ? 'Never dark in 11 years' : 'Not enough roofs nearby'}
+          {g.ok ? 'Never dark in 11 years' : 'Could not be sized'}
         </span>
         <dl className="mt-5 space-y-2 text-[15px]">
           <Row k="Lamps" v={`${fmt(g.lamps)}${g.park_lamps ? ` (${fmt(g.park_lamps)} in parks)` : ''}`} />
           <Row k="Needs each night" v={`${fmt(g.night_kwh, 1)} kWh`} />
-          <Row k="Solar" v={`${fmt(g.kwp, 1)} kWp on ${g.roofs.length} roof${g.roofs.length === 1 ? '' : 's'}`} />
-          <Row k="Battery" v={g.battery_kwh ? `${fmt(g.battery_kwh)} kWh` : '—'} />
+          <Row k="Each lamp" v={`${fmt(g.lamp_w)} W LED`} />
+          <Row k="Panel on each pole" v={`${fmt(g.panel_wp)} Wp`} />
+          <Row k="Battery on each pole" v={`${fmt(g.battery_wh_per_lamp / 1000, 1)} kWh`} />
           {g.lowest_pct !== null && g.lowest_date && <Row k="Lowest charge" v={`${g.lowest_pct}% · ${longDate(g.lowest_date)}`} />}
           {g.one_night_dark !== null && <Row k="With a 1-night battery" v={`${fmt(g.one_night_dark)} dark nights`} />}
         </dl>
-        <p className="mt-4 text-sm text-muted">Roofs: {names(g.roofs).join(', ')}</p>
+        <p className="mt-4 text-sm text-muted">Standalone solar lamps: every pole has its own panel and battery, so they take no roofs and keep working in a blackout.</p>
       </aside>
     )
   }
@@ -200,8 +200,8 @@ function Detail({ plan, selected, roofs }: { plan: CommunityPlan; selected: stri
       <ol className="mt-3 list-decimal space-y-3 pl-5 text-[15px]">
         <li><span className="font-medium">Find</span> every school, place of worship, hall and clinic in OpenStreetMap, plus every road that needs lighting.</li>
         <li><span className="font-medium">Own roof first.</span> Each building uses the roofs on its own grounds.</li>
-        <li><span className="font-medium">Neighbours fill the gap.</span> If that isn’t enough for the cloudiest month, the nearest good roofs within {fmt(500)} m share theirs.</li>
-        <li><span className="font-medium">Lamps never go dark.</span> Each lamp group gets roofs and a battery, sized so that no night in 11 years of real weather would have gone dark.</li>
+        <li><span className="font-medium">Neighbours fill the gap.</span> If that isn’t enough for the cloudiest month, good roofs within {fmt(500)} m are leased (CREAM) and their power reaches the building over TNB’s wires.</li>
+        <li><span className="font-medium">Lamps never go dark.</span> Street lamps become standalone solar lamps, each with its own panel and battery, sized so that no night in 11 years of real weather would have gone dark.</li>
         <li><span className="font-medium">The rest is sold</span> to local businesses to pay for it all.</li>
       </ol>
       <p className="mt-4 text-sm text-muted">Click a dot on the map or a row below for details.</p>
@@ -250,7 +250,7 @@ function FacilityTable({ plan, selected, onSelect }: { plan: CommunityPlan; sele
 
 function FacilityRow({ f, active, onSelect }: { f: Facility; active: boolean; onSelect: (id: string) => void }) {
   const st = STATUS_INFO[f.status]
-  const by = [f.own_roofs.length ? 'own roof' : null, f.shared_roofs.length ? `${f.shared_roofs.length} nearby roof${f.shared_roofs.length > 1 ? 's' : ''}` : null].filter(Boolean).join(' + ')
+  const by = [f.own_roofs.length ? 'own roof' : null, f.shared_roofs.length ? `${f.shared_roofs.length} leased roof${f.shared_roofs.length > 1 ? 's' : ''}` : null].filter(Boolean).join(' + ')
   return (
     <tr className={`border-b border-line last:border-0 ${active ? 'bg-primary/5' : ''}`}>
       <td className="px-2 py-3">
@@ -274,12 +274,12 @@ function LampSection({ plan, cidx, selected, onSelect }: { plan: CommunityPlan; 
     <section className="card mt-6 p-6" aria-labelledby="lamp-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="lamp-h" className="text-lg font-semibold">Street lamps that never go dark</h2>
-        <Link to="/firming" className="text-[15px] text-primary underline underline-offset-2">Check the next 14 nights →</Link>
+        <Link to="/streetlights" className="text-[15px] text-primary underline underline-offset-2">Street-light watch: lamps at risk this week →</Link>
       </div>
       <p className="mt-1 max-w-4xl text-[15px] text-muted">
-        Lamps run at night, so solar alone can’t light them. Each group of lamps gets roofs that charge a battery by day. We replayed every day from{' '}
-        {longDate(s.record.start)} to {longDate(s.record.end)} ({fmt(s.record.days)} days of real NASA weather) through each group’s solar and battery, and sized the
-        battery so that <span className="font-semibold text-ink">no night went dark</span> and it always kept a {Math.round(0.2 * 100)}% reserve.
+        Lamps run at night, when solar overlap is zero, so rooftop solar can’t light them. Each lamp becomes a standalone solar lamp with its own panel and battery, dimmed to 50% from 1 am to 5 am. We replayed every day from{' '}
+        {longDate(s.record.start)} to {longDate(s.record.end)} ({fmt(s.record.days)} days of real NASA weather) through every lamp, and sized the
+        panel and battery so that <span className="font-semibold text-ink">no night went dark</span> and it always kept a {Math.round(0.2 * 100)}% reserve.
       </p>
       <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {c ? <ChargeChart c={c} /> : <p className="text-muted">No lamp groups.</p>}
@@ -287,12 +287,12 @@ function LampSection({ plan, cidx, selected, onSelect }: { plan: CommunityPlan; 
           <div className="rounded-card bg-page px-5 py-4">
             <dt className="text-sm text-muted">Hardest stretch in 11 years</dt>
             <dd className="mt-1 text-2xl font-medium num">{c ? `${c.lowest_pct}% left` : '—'}</dd>
-            <dd className="mt-1 text-sm text-muted">{c ? `all lamp batteries together, morning of ${longDate(c.lowest_date)}${ev ? `, during ${ev}` : ''}` : ''}</dd>
+            <dd className="mt-1 text-sm text-muted">{c ? `all lamps together, morning of ${longDate(c.lowest_date)}${ev ? `, during ${ev}` : ''}` : ''}</dd>
           </div>
           <div className="rounded-card bg-page px-5 py-4">
             <dt className="text-sm text-muted">Without a proper battery</dt>
             <dd className="mt-1 text-2xl font-medium num text-warn">{fmt(worstOneNight)} dark nights</dd>
-            <dd className="mt-1 text-sm text-muted">in the worst group, if its battery only held one night</dd>
+            <dd className="mt-1 text-sm text-muted">in the worst group, if each lamp’s battery only held one night</dd>
           </div>
           <div className="rounded-card bg-page px-5 py-4">
             <dt className="text-sm text-muted">Lamps estimated from roads</dt>
@@ -308,8 +308,8 @@ function LampSection({ plan, cidx, selected, onSelect }: { plan: CommunityPlan; 
             <thead className="border-b border-line text-left text-muted">
               <tr>
                 <th scope="col" className="py-2 pr-3 font-medium">Group</th><th scope="col" className="pr-3 font-medium">Lamps</th>
-                <th scope="col" className="pr-3 font-medium">kWh / night</th><th scope="col" className="pr-3 font-medium">Solar</th>
-                <th scope="col" className="pr-3 font-medium">Battery</th><th scope="col" className="pr-3 font-medium">Lowest charge</th>
+                <th scope="col" className="pr-3 font-medium">LED</th><th scope="col" className="pr-3 font-medium">Panel / pole</th>
+                <th scope="col" className="pr-3 font-medium">Battery / pole</th><th scope="col" className="pr-3 font-medium">Lowest charge</th>
                 <th scope="col" className="font-medium">Dark nights</th>
               </tr>
             </thead>
@@ -318,17 +318,17 @@ function LampSection({ plan, cidx, selected, onSelect }: { plan: CommunityPlan; 
                 <tr key={g.id} className={`border-t border-line ${g.id === selected ? 'bg-primary/5' : ''}`}>
                   <td className="py-1.5 pr-3 font-sans"><button type="button" className="min-h-touch text-primary underline-offset-2 hover:underline" onClick={() => onSelect(g.id)}>{g.id}</button></td>
                   <td className="pr-3">{fmt(g.lamps)}</td>
-                  <td className="pr-3">{fmt(g.night_kwh, 1)}</td>
-                  <td className="pr-3">{fmt(g.kwp, 1)} kWp · {g.roofs.length} roof{g.roofs.length === 1 ? '' : 's'}</td>
-                  <td className="pr-3">{g.battery_kwh ? `${fmt(g.battery_kwh)} kWh` : '—'}</td>
+                  <td className="pr-3">{fmt(g.lamp_w)} W</td>
+                  <td className="pr-3">{fmt(g.panel_wp)} Wp</td>
+                  <td className="pr-3">{fmt(g.battery_wh_per_lamp / 1000, 1)} kWh</td>
                   <td className="pr-3">{g.lowest_pct !== null && g.lowest_date ? `${g.lowest_pct}% · ${shortDate(g.lowest_date)} ${g.lowest_date.slice(0, 4)}` : '—'}</td>
-                  <td className={g.ok && g.dark_nights === 0 ? 'text-primary' : 'text-warn'}>{g.ok ? fmt(g.dark_nights ?? 0) : 'short of roofs'}</td>
+                  <td className={g.ok && g.dark_nights === 0 ? 'text-primary' : 'text-warn'}>{g.ok ? fmt(g.dark_nights ?? 0) : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-muted">LED lamps {LAMP_W(cidx)}, {cidx.lamp_hours} hours a night · solar sized to {cidx.lamp_pv_oversize}× the average night · battery {Math.round(cidx.battery_eff * 100)}% round trip, {Math.round(cidx.battery_dod * 100)}% usable.</p>
+        <p className="mt-2 text-xs text-muted">LED lamps {LAMP_W(cidx)}, {cidx.lamp_hours} hours a night, {cidx.dim_hours} of them at {Math.round(cidx.dim_level * 100)}% · solar sized to {cidx.lamp_pv_oversize}× the average night · battery {Math.round(cidx.battery_eff * 100)}% round trip, {Math.round(cidx.battery_dod * 100)}% usable.</p>
       </details>
     </section>
   )
@@ -369,7 +369,7 @@ function ChargeChart({ c }: { c: NonNullable<CommunityPlan['lowest_curve']> }) {
         ))}
       </svg>
       <figcaption className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
-        <span className="flex items-center gap-1.5"><span className="w-5 border-t-2 border-primary" />Battery charge each morning, all lamp groups</span>
+        <span className="flex items-center gap-1.5"><span className="w-5 border-t-2 border-primary" />Battery charge each morning, all lamps</span>
         <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-amber-soft" />Sunshine that day</span>
         <span>{c.dates[0].slice(0, 4)}</span>
       </figcaption>

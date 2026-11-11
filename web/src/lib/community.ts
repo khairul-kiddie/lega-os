@@ -39,7 +39,10 @@ export interface LampGroup {
   night_kwh: number
   kwp_need: number
   kwp: number
-  roofs: string[]
+  /** average LED watts, panel Wp and battery Wh on each pole (standalone solar lamps) */
+  lamp_w: number
+  panel_wp: number
+  battery_wh_per_lamp: number
   battery_kwh: number | null
   battery_usable_kwh: number | null
   /** nights that would have gone dark over 2015–2025 */
@@ -97,6 +100,8 @@ export interface CommunityIndex {
   loads: Record<string, { label: string; mwh: number; day: number }>
   lamp_roads: Record<string, { spacing_m: number; watts: number }>
   lamp_hours: number
+  dim_hours: number
+  dim_level: number
   battery_eff: number
   battery_dod: number
   lamp_pv_oversize: number
@@ -116,7 +121,7 @@ export const STATUS_INFO: Record<FacilityStatus, { label: string; cls: string; c
 
 /** Roofs a community plan uses (own + shared + lamp feeders). */
 export const communityRoofIds = (p: CommunityPlan) =>
-  new Set([...p.facilities.flatMap((f) => [...f.own_roofs, ...f.shared_roofs]), ...p.lamp_groups.flatMap((g) => g.roofs)])
+  new Set(p.facilities.flatMap((f) => [...f.own_roofs, ...f.shared_roofs]))
 
 export const RESERVE = 0.2
 

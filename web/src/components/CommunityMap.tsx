@@ -64,15 +64,13 @@ export default function CommunityMap({ meta, plan, roofs, selected, onSelect, fo
     for (const f of plan.facilities)
       for (const id of [...f.own_roofs, ...f.shared_roofs])
         drawRoof(id, MAP_COLORS.facilityRoof, `${byId.get(id)?.label ?? id} · powers ${f.name}`)
-    for (const lg of plan.lamp_groups)
-      for (const id of lg.roofs) drawRoof(id, MAP_COLORS.lampRoof, `${byId.get(id)?.label ?? id} · charges lamp group ${lg.id}`)
 
     for (const lg of plan.lamp_groups) {
       const c = L.circleMarker([lg.lat, lg.lon], {
         radius: Math.max(6, Math.min(20, Math.sqrt(lg.lamps) * 1.1)), color: '#15201B', weight: 1.5,
         fillColor: lg.ok ? MAP_COLORS.lamp : '#E8643F', fillOpacity: 0.85,
       })
-      c.bindTooltip(`Lamp group ${lg.id} · ${fmt(lg.lamps)} lamps · ${fmt(lg.night_kwh)} kWh a night · battery ${fmt(lg.battery_kwh ?? 0)} kWh`, { direction: 'top', opacity: 0.95 })
+      c.bindTooltip(`Lamp group ${lg.id} · ${fmt(lg.lamps)} solar lamps · ${fmt(lg.panel_wp)} Wp panel + ${fmt(lg.battery_wh_per_lamp / 1000, 1)} kWh battery each`, { direction: 'top', opacity: 0.95 })
       c.on('click', () => onSelectRef.current(lg.id))
       c.addTo(g)
       marks.current.set(lg.id, c)
