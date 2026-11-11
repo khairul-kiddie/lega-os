@@ -6,20 +6,23 @@ import { isHome, loadRoofs, roofHref, type SatRoof, type TownshipIndex, type Tow
 import { fmt, useJson } from '../lib/data'
 import type { Roof, ScorePart, YieldData } from '../lib/data'
 import { pct, shortDate, WEATHER_LABEL, type Backtest } from '../lib/forecast'
+import OrientationTab from '../components/OrientationStudy'
 
-type Tab = 'roof' | 'forecast'
+type Tab = 'roof' | 'forecast' | 'orientation'
+const TAB_LABEL: Record<Tab, string> = { roof: 'Roof scoring model', forecast: 'Forecast model', orientation: 'Orientation study (Kulai)' }
 
 export default function Insights() {
   const [params, setParams] = useSearchParams()
-  const tab: Tab = params.get('tab') === 'forecast' ? 'forecast' : 'roof'
+  const q = params.get('tab')
+  const tab: Tab = q === 'forecast' || q === 'orientation' ? q : 'roof'
   return (
     <>
       <PageHeader
         title="Model insights"
-        subtitle={tab === 'roof' ? 'What each model looked at, and why it gave this answer · sample data' : 'How much SDP can safely promise, and how often that promise held · real weather data'}
+        subtitle={tab === 'roof' ? 'What each model looked at, and why it gave this answer · sample data' : tab === 'forecast' ? 'How much SDP can safely promise, and how often that promise held · real weather data' : 'Which roof tilts and directions make the most power in Kulai · real hourly weather'}
         right={
           <div role="tablist" aria-label="Model" className="flex gap-2">
-            {(['roof', 'forecast'] as Tab[]).map((t) => (
+            {(['roof', 'forecast', 'orientation'] as Tab[]).map((t) => (
               <button
                 key={t}
                 role="tab"
@@ -29,14 +32,14 @@ export default function Insights() {
                 onClick={() => setParams({ tab: t })}
                 className={`min-h-touch rounded-lg border px-5 text-[15px] ${tab === t ? 'border-ink bg-ink text-white' : 'border-line bg-card hover:bg-page'}`}
               >
-                {t === 'roof' ? 'Roof scoring model' : 'Forecast model'}
+                {TAB_LABEL[t]}
               </button>
             ))}
           </div>
         }
       />
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'forecast' ? <ForecastTab /> : <RoofTab />}
+        {tab === 'forecast' ? <ForecastTab /> : tab === 'orientation' ? <OrientationTab /> : <RoofTab />}
       </div>
     </>
   )
