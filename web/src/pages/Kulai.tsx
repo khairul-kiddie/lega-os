@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Kpi, PageHeader, SampleNote } from '../components/ui'
+import { Kpi, PageHeader, SampleNote, Segmented } from '../components/ui'
 import { fmt, useJson } from '../lib/data'
 import {
   DEFAULT_SETTINGS,
@@ -15,7 +15,15 @@ import {
 } from '../lib/kulai'
 import { assetStore, evaluate, newAsset, type Asset, type PlannerData } from '../lib/planner'
 
-const FORM_LABEL: Record<RoofForm, string> = { gable: 'Gable', hip: 'Hip', flat: 'Flat / low' }
+const FORM_LABEL: Record<RoofForm, string> = { gable: 'Gable', hip: 'Hip', flat: 'Flat / low', mono: 'Mono-pitch (one face)' }
+const EFF_LO = 0.85
+
+/** 85% or less = rust, ~93% = amber, 100% = green. */
+function effColor(e: number) {
+  const f = Math.max(0, Math.min(1, (e - EFF_LO) / (1 - EFF_LO)))
+  const [a, b, t] = f < 0.55 ? [[194, 80, 42], [242, 179, 61], f / 0.55] : [[242, 179, 61], [31, 111, 87], (f - 0.55) / 0.45]
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`
+}
 const COMMUNITY_ICON: Record<string, string> = { school: 'S', hall: 'P', surau: 'M', battery: 'B' }
 
 export default function Kulai() {
@@ -30,12 +38,16 @@ export default function Kulai() {
 function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
   const [s, setS] = useState<Settings>(() => DEFAULT_SETTINGS(l))
   const [flood, setFlood] = useState(true)
+  const [colorBy, setColorBy] = useState<'eff' | 'kwh'>('eff')
   const [sent, setSent] = useState<number | null>(null)
   const set = (patch: Partial<Settings>) => setS((x) => ({ ...x, ...patch }))
 
   const results = useMemo(() => new Map(l.plots.map((p) => [p.id, plotResult(p, l, lk, s)])), [l, lk, s])
   const levers = useMemo(() => needle(l, lk, s), [l, lk, s])
   const all = useMemo(() => totals(l.plots, l, lk, s), [l, lk, s])
+  const atZero = useMemo(() => totals(l.plots, l, lk, { ...s, rotation: 0 }).kwh, [l, lk, s])
+  const rotDelta = ((all.kwh - atZero) / atZero) * 100
+  const effs = [...results.values()].map((r) => r.efficiency)
   const maxKwh = Math.max(...[...results.values()].map((r) => r.kwh))
   const minKwh = Math.min(...[...results.values()].map((r) => r.kwh))
 
@@ -82,10 +94,13 @@ function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <section className="card p-4" aria-labelledby="map-h">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
-            <h2 id="map-h" className="text-lg font-semibold">Layout · coloured by solar per home</h2>
+            <h2 id="map-h" className="text-lg font-semibold">Layout · coloured by {colorBy === 'eff' ? 'roof efficiency' : 'solar per home'}</h2>
+            <div className="flex flex-wrap items-center gap-3">
+            <Segmented label="Colour by" value={colorBy} onChange={setColorBy} options={[{ id: 'eff', label: 'Roof efficiency' }, { id: 'kwh', label: 'Solar per home' }]} />
             <label className="flex min-h-touch items-center gap-2 text-sm">
               <input type="checkbox" className="h-5 w-5 accent-primary" checked={flood} onChange={(e) => setFlood(e.target.checked)} />Flood zone
             </label>
+            </div>
           </div>
           <svg viewBox={`-6 -24 ${W + 12} ${H + 30}`} className="w-full rounded-lg bg-[#EEF1EA]" role="img" aria-label="Kulai sample layout with plots coloured by yearly solar">
             {flood && (
@@ -104,9 +119,9 @@ function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
             {l.plots.map((p) => {
               const r = results.get(p.id)!
               return (
-                <rect key={p.id} x={p.x - p.w / 2} y={H - p.y - p.d / 2} width={p.w} height={p.d} fill={color(r.kwh)}
+                <rect key={p.id} x={p.x - p.w / 2} y={H - p.y - p.d / 2} width={p.w} height={p.d} fill={colorBy === 'eff' ? effColor(r.efficiency) : color(r.kwh)}
                   stroke={r.loss > 0 ? '#A33A12' : '#FFFFFF'} strokeWidth={r.loss > 0 ? 1.6 : 0.6} transform={`rotate(${-s.rotation} ${p.x} ${H - p.y})`}>
-                  <title>{`${l.house_types[p.type].label} · ${fmt(r.kwp, 1)} kWp · ${fmt(r.kwh)} kWh/yr${r.loss ? ` · ${Math.round(r.loss * 100)}% shaded` : ''} · ${r.neutral ? 'bill-neutral' : 'not bill-neutral'}`}</title>
+                  <title>{`${l.house_types[p.type].label} · ${s.forms[p.type]} roof · ${Math.round(r.efficiency * 1000) / 10}% of the best roof · ${fmt(r.kwp, 1)} kWp · ${fmt(r.kwh)} kWh/yr${r.loss ? ` · ${Math.round(r.loss * 100)}% shaded` : ''} · ${r.neutral ? 'bill-neutral' : 'not bill-neutral'}`}</title>
                 </rect>
               )
             })}
@@ -120,7 +135,11 @@ function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
             ))}
           </svg>
           <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 px-1 text-sm text-muted">
-            <span className="flex items-center gap-1.5"><span className="h-3 w-10 rounded-sm" style={{ background: 'linear-gradient(90deg,#FBEBD3,#1F6F57)' }} />{fmt(minKwh)} → {fmt(maxKwh)} kWh/yr per home</span>
+            {colorBy === 'eff' ? (
+              <span className="flex items-center gap-1.5"><span className="h-3 w-16 rounded-sm" style={{ background: `linear-gradient(90deg,${effColor(0.85)},${effColor(0.93)},${effColor(1)})` }} />≤ 85% → 100% of the best roof in Kulai (now {fmt(Math.min(...effs) * 100, 1)}–{fmt(Math.max(...effs) * 100, 1)}%)</span>
+            ) : (
+              <span className="flex items-center gap-1.5"><span className="h-3 w-10 rounded-sm" style={{ background: 'linear-gradient(90deg,#FBEBD3,#1F6F57)' }} />{fmt(minKwh)} → {fmt(maxKwh)} kWh/yr per home (mostly house size)</span>
+            )}
             <span className="flex items-center gap-1.5"><span className="h-3 w-3 border-2 border-warn" />Shaded by a taller neighbour</span>
             <span>S school · P evacuation centre (PPS) · M surau · B shared battery</span>
           </div>
@@ -131,6 +150,10 @@ function Planner({ l, lk, pd }: { l: Layout; lk: Lookup; pd: PlannerData }) {
             <h2 id="ctl-h" className="font-semibold">Design levers</h2>
             <label htmlFor="rot" className="mt-4 flex justify-between text-sm font-medium">Street grid rotation <span className="num">{s.rotation}°</span></label>
             <input id="rot" type="range" min={0} max={90} step={5} value={s.rotation} onChange={(e) => set({ rotation: Number(e.target.value) })} className="mt-1 w-full accent-primary" />
+            <p className="mt-1 text-xs text-muted" aria-live="polite">
+              Township solar <span className="num text-ink">{fmt(all.kwh / 1e6, 3)} GWh</span>, <span className="num text-ink">{rotDelta >= 0 ? '+' : ''}{fmt(rotDelta, 2)}%</span> vs 0°.
+              {' '}Gable and hip roofs face both ways, so turning them barely matters; set a house type to <span className="font-medium text-ink">Mono-pitch</span> to see direction matter.
+            </p>
             <label htmlFor="pitch" className="mt-4 flex justify-between text-sm font-medium">Roof pitch (pitched roofs) <span className="num">{s.pitch === null ? 'type default' : `${s.pitch}°`}</span></label>
             <input id="pitch" type="range" min={10} max={35} step={5} value={s.pitch ?? 20} onChange={(e) => set({ pitch: Number(e.target.value) })} className="mt-1 w-full accent-primary" />
             <div className="mt-4 space-y-2">

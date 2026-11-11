@@ -28,7 +28,9 @@ HOUSE_TYPES = {
     "shophouse":   {"label": "3-storey shophouse", "roof": "flat", "pitch": 5, "usable": 0.60, "height": 13, "w": 6.7, "d": 22, "use_kwh": 9000},
 }
 ROOF_FORMS = {"gable": {"usable": 0.45, "faces": [0, 180]}, "hip": {"usable": 0.30, "faces": [0, 90, 180, 270]},
-              "flat": {"usable": 0.60, "faces": [180]}}
+              "flat": {"usable": 0.60, "faces": [180]},
+              # mono-pitch (skillion): one sloping face carries all the panels, so it is the only form where direction matters
+              "mono": {"usable": 0.55, "faces": [180]}}
 
 # phase -> x range and the house types of its blocks (cycled)
 PHASES = [

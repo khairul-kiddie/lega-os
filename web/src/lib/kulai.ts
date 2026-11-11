@@ -2,7 +2,7 @@
 // real orientation lookup (NASA POWER hourly + pvlib Perez, see pipeline/lega/kulai_orientation.py).
 
 export type HouseType = 'terrace' | 'terrace_hip' | 'semid' | 'shophouse'
-export type RoofForm = 'gable' | 'hip' | 'flat'
+export type RoofForm = 'gable' | 'hip' | 'flat' | 'mono'
 
 export interface Lookup {
   site: { name: string; lat: number; lon: number }
@@ -92,6 +92,8 @@ export function roofOf(l: Layout, s: Settings, type: HouseType) {
 }
 
 export interface PlotResult {
+  /** yield after shading as a share of the best roof in the lookup (0..1) */
+  efficiency: number
   kwp: number
   yieldKwhKwp: number
   loss: number
@@ -105,7 +107,7 @@ export function plotResult(p: Plot, l: Layout, lk: Lookup, s: Settings): PlotRes
   const kwp = p.footprint_m2 * r.usable * l.kwp_per_m2
   const loss = s.noShade ? 0 : Math.min(0.3, p.shade.filter((x) => !(s.avoidWestShops && x.side === 'west')).reduce((a, x) => a + x.loss, 0))
   const kwh = kwp * yieldKwhKwp * (1 - loss)
-  return { kwp, yieldKwhKwp, loss, kwh, neutral: kwh >= l.house_types[p.type].use_kwh }
+  return { efficiency: (yieldKwhKwp * (1 - loss)) / lk.best, kwp, yieldKwhKwp, loss, kwh, neutral: kwh >= l.house_types[p.type].use_kwh }
 }
 
 export interface Totals {
