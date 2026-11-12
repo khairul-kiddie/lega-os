@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from lega.townships import read_township
 from lega.config import WEB_DATA, YIELD_SANITY_RANGE
 
 DIR = WEB_DATA / "townships"
@@ -10,7 +11,7 @@ INDEX = json.loads((DIR / "index.json").read_text())
 
 @pytest.mark.parametrize("meta", INDEX["townships"], ids=lambda m: m["id"])
 def test_township_file_is_consistent(meta):
-    d = json.loads((DIR / f"{meta['id']}.json").read_text())
+    d = read_township(meta["id"])
     n = len(d["id"])
     assert n == meta["summary"]["solar_ready"] > 0
     assert len(set(d["id"])) == n, "roof ids must be unique"
@@ -23,7 +24,7 @@ def test_township_file_is_consistent(meta):
 
 @pytest.mark.parametrize("meta", INDEX["townships"], ids=lambda m: m["id"])
 def test_polygons_decode_near_their_centroid(meta):
-    d = json.loads((DIR / f"{meta['id']}.json").read_text())
+    d = read_township(meta["id"])
     ox, oy = d["origin"]
     for i in range(0, len(d["id"]), max(1, len(d["id"]) // 50)):
         p = d["poly"][i]
@@ -48,13 +49,13 @@ def test_every_roof_lies_inside_the_township_outline(meta):
     from lega.townships import TOWNSHIPS, in_outline, outline
 
     polys = outline(next(t for t in TOWNSHIPS if t["id"] == meta["id"]))
-    d = json.loads((DIR / f"{meta['id']}.json").read_text())
+    d = read_township(meta["id"])
     assert all(in_outline(x, y, polys) for x, y in zip(d["cx"], d["cy"]))
 
 
 def test_elmina_excludes_kampung_kubu_gajah():
     # Kampung Kubu Gajah, OSM way 708366159, lies north-east of Elmina's outline (lat 3.188–3.213, lon 101.508–101.530)
-    d = json.loads((DIR / "elmina.json").read_text())
+    d = read_township("elmina")
     in_kubu_core = sum(3.195 <= y <= 3.21 and 101.512 <= x <= 101.527 for x, y in zip(d["cx"], d["cy"]))
     assert in_kubu_core == 0
 
@@ -78,5 +79,5 @@ def test_roof_types_follow_building_tags():
 
 def test_no_factory_label_anywhere():
     for meta in INDEX["townships"]:
-        d = json.loads((DIR / f"{meta['id']}.json").read_text())
+        d = read_township(meta["id"])
         assert "Factory" not in json.dumps(d["class_label"])

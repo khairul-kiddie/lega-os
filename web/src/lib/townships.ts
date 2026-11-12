@@ -48,6 +48,32 @@ export interface TownshipIndex {
 }
 
 /** Columnar file as written by pipeline/lega/townships.py. */
+/** On disk: text columns are indexes into `dict`, roof ids are numbers after `id_prefix` (see pipeline/lega/townships.py pack). */
+interface PackedTownshipFile extends Omit<TownshipFile, 'id' | 'cls' | 'name' | 'owner' | 'headline' | 'why'> {
+  id_prefix: string
+  dict: { cls: RoofClass[]; name: string[]; owner: string[]; headline: string[]; why: string[] }
+  id: number[]
+  cls: number[]
+  name: number[]
+  owner: number[]
+  headline: number[]
+  why: number[][]
+}
+
+export function unpackTownship(f: PackedTownshipFile | TownshipFile): TownshipFile {
+  if (!('dict' in f)) return f
+  const { dict: t, id_prefix, ...rest } = f
+  return {
+    ...rest,
+    id: f.id.map((n) => `${id_prefix}-${String(n).padStart(5, '0')}`),
+    cls: f.cls.map((i) => t.cls[i]),
+    name: f.name.map((i) => t.name[i]),
+    owner: f.owner.map((i) => t.owner[i]),
+    headline: f.headline.map((i) => t.headline[i]),
+    why: f.why.map((ws) => ws.map((i) => t.why[i])),
+  }
+}
+
 interface TownshipFile {
   origin: [number, number]
   kx: number
@@ -114,7 +140,7 @@ export function loadRoofs(id: string): Promise<SatRoof[]> {
   if (!decoded.has(id)) {
     decoded.set(
       id,
-      loadJson<TownshipFile>(`townships/${id}.json`).then((f) => {
+      loadJson<PackedTownshipFile>(`townships/${id}.json`).then(unpackTownship).then((f) => {
         const [ox, oy] = f.origin
         return f.id.map((rid, i) => {
           const p = f.poly[i]

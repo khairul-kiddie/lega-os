@@ -328,12 +328,61 @@ def scan(t: dict) -> dict:
     return {"meta": {**meta, "summary": summary}, "data": data}
 
 
+# ---------------------------------------------------------------- compact file format
+# Text columns repeat a lot (7,000 roofs share ~200 headlines), so each file stores every distinct
+# string once in "dict" and the columns as indexes into it; roof ids are stored as their number.
+# web/src/lib/townships.ts (unpack) and read_township() below turn it back into plain columns.
+DICT_COLS = ("cls", "name", "owner", "headline")
+
+
+def pack(data: dict) -> dict:
+    if "dict" in data:
+        return data
+    d = dict(data)
+    table = {}
+    for c in DICT_COLS:
+        vals = sorted(set(data[c]))
+        pos = {v: i for i, v in enumerate(vals)}
+        table[c] = vals
+        d[c] = [pos[v] for v in data[c]]
+    words = sorted({w for ws in data["why"] for w in ws})
+    wpos = {w: i for i, w in enumerate(words)}
+    table["why"] = words
+    d["why"] = [[wpos[w] for w in ws] for ws in data["why"]]
+    prefix = data["id"][0].rsplit("-", 1)[0] if data["id"] else ""
+    assert all(i == f"{prefix}-{int(i.rsplit('-', 1)[1]):05d}" for i in data["id"]), "roof ids must be <prefix>-NNNNN"
+    d["id_prefix"] = prefix
+    d["id"] = [int(i.rsplit("-", 1)[1]) for i in data["id"]]
+    d["dict"] = table
+    return d
+
+
+def unpack(data: dict) -> dict:
+    if "dict" not in data:
+        return data
+    d = {k: v for k, v in data.items() if k not in ("dict", "id_prefix")}
+    t = data["dict"]
+    for c in DICT_COLS:
+        d[c] = [t[c][i] for i in data[c]]
+    d["why"] = [[t["why"][i] for i in ws] for ws in data["why"]]
+    d["id"] = [f"{data['id_prefix']}-{n:05d}" for n in data["id"]]
+    return d
+
+
+def read_township(tid: str) -> dict:
+    return unpack(json.loads((OUT / f"{tid}.json").read_text()))
+
+
+def write_township(tid: str, data: dict) -> None:
+    (OUT / f"{tid}.json").write_text(json.dumps(pack(data), separators=(",", ":"), ensure_ascii=False))
+
+
 def run():
     OUT.mkdir(parents=True, exist_ok=True)
     index = []
     for t in TOWNSHIPS:
         res = scan(t)
-        (OUT / f"{t['id']}.json").write_text(json.dumps(res["data"], separators=(",", ":"), ensure_ascii=False))
+        write_township(t["id"], res["data"])
         index.append(res["meta"])
         sm = res["meta"]["summary"]
         print(f"{t['name']:26} detected {sm['buildings_detected']:5}  solar-ready {sm['solar_ready']:5}  good {sm['good_roofs']:5}  "

@@ -26,7 +26,7 @@ import requests
 from . import nasa_power
 from .config import RAW, WEB_DATA
 from .simulate import hourly_from_daily
-from .townships import OUT as TOWNSHIP_OUT, TOWNSHIPS, UA, in_outline, in_ring, outline, outline_bbox
+from .townships import OUT as TOWNSHIP_OUT, TOWNSHIPS, read_township, UA, in_outline, in_ring, outline, outline_bbox
 
 CACHE = RAW / "community"
 OUT = WEB_DATA / "community"
@@ -301,7 +301,7 @@ def plan(t: dict) -> dict:
     month_share = np.array([y[months == m].mean() for m in range(1, 13)]) / y.mean()  # 1 = average month
     worst_month = float(month_share.min())
 
-    roofs = json.loads((TOWNSHIP_OUT / f"{t['id']}.json").read_text())
+    roofs = read_township(t["id"])
     R = [{"id": roofs["id"][i], "c": (roofs["cx"][i], roofs["cy"][i]), "mwh": roofs["mwh"][i], "kwp": roofs["kwp"][i],
           "score": roofs["score"][i], "cls": roofs["cls"][i], "name": roofs["name"][i]} for i in range(len(roofs["id"]))]
     taken: set[str] = set()

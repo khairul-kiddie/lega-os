@@ -278,8 +278,9 @@ lega-os/
                             battery dispatch, street lamps)
   web/                      React + TypeScript + Vite + Tailwind static site
     src/lib/formulas.ts     the same formulas in TypeScript (vitest against the shared cases)
-    public/data/            JSON from the pipeline: ≈ 400 KB core + 4.3 MB of township scans,
-                            each township loaded only when it is opened (≈ 0.03–1.8 MB, gzip ≈ 25%)
+    public/data/            JSON from the pipeline: 2.9 MB in all (≈ 300 KB core + 2.6 MB of township
+                            scans, each loaded only when opened, 0.02–1.0 MB). Repeated text is stored
+                            once per file and unpacked in the browser (townships.py pack / townships.ts)
 ```
 
 - **Heavy work runs offline.** The web app is a static site, so there is no server to fail during judging.

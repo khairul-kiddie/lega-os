@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from lega.townships import read_township
 from lega.config import WEB_DATA
 from lega.townships import TOWNSHIPS, in_outline, outline
 
@@ -27,7 +28,7 @@ def test_no_roof_is_promised_twice(tid):
     p = load(tid)
     used = [r for f in p["facilities"] for r in f["own_roofs"] + f["shared_roofs"]]
     assert len(used) == len(set(used))
-    roofs = set(json.loads((WEB_DATA / "townships" / f"{tid}.json").read_text())["id"])
+    roofs = set(read_township(tid)["id"])
     assert set(used) <= roofs
 
 
