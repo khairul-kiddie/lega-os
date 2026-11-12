@@ -340,7 +340,7 @@ function Details() {
           </Field>
           <label className="flex min-h-touch items-center gap-3 self-end text-sm">
             <input type="checkbox" className="h-5 w-5 accent-primary" checked={form.floodZone} onChange={(e) => set({ floodZone: e.target.checked })} />
-            In a flood-risk zone <span className="text-muted">(sample flag until JPS flood maps are added)</span>
+            In a flood-risk zone <span className="text-muted">(tick it if the JPS flood map shows the site at risk)</span>
           </label>
         </div>
 

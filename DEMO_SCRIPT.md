@@ -35,7 +35,7 @@ The battery controller and street-light watch use the live forecast, which refre
 - *"Are you replacing TNB?"* No. SDP owns panels and batteries behind the meter on its own property. Power from a leased neighbour roof reaches a building over TNB's wires (NEM / CRESS); the grid still backs everything up.
 - *"Why aren't street lamps on the rooftop plan?"* They run at night, when solar output is zero. They are standalone solar lamps with their own panel and battery.
 - *"Is roof direction really that unimportant?"* For a whole house, yes: one face changes by up to 4% at 20° tilt (east is slightly best, thanks to clearer mornings), but a gable house has two opposite faces, so the house total moves about 0.1%. Pitch and roof shape matter more.
-- *"Are the buildings and loads real?"* Buildings and roads are real (OpenStreetMap). Loads, people served, flood zones, prices, battery sites and lamp specs are sample values, and every screen says so.
+- *"Are the buildings and loads real?"* Buildings and roads are real (OpenStreetMap). Loads, people served, prices, battery sites and lamp specs are sample values, and every screen says so. Flood risk is off until a planner ticks it, so no building gets flood points by guesswork.
 - *"Who pays?"* Commercial buyers of the surplus. The planner shows the commercial MWh each battery needs.
 
 **If something fails live**

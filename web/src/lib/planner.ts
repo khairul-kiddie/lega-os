@@ -168,7 +168,7 @@ export interface Asset {
   createdAt: string
 }
 
-export const assetStore = createStore<Asset[] | null>('lega.assets.v1', null)
+export const assetStore = createStore<Asset[] | null>('lega.assets.v2', null)
 
 export function newAsset(type: Asset['type'], p: Profile, township = 'elmina'): Asset {
   return {
@@ -207,7 +207,7 @@ export function assetsFromFacilities(plan: CommunityPlan, data: PlannerData): As
       annualKwh: f.need_mwh * 1000,
       ownRoofKwp: Math.round((f.own_mwh * 1000) / y),
       people: type === 'school' && f.need_mwh < 50 ? 150 : p.people,
-      floodZone: i % 4 === 1, // SAMPLE: replace with JPS flood maps
+      floodZone: false, // off until a planner ticks it (no flood map loaded yet)
       osm: f.id,
       createdAt: new Date(Date.UTC(2026, 10, 1, 9, i)).toISOString(),
     }

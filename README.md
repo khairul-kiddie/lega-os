@@ -58,7 +58,8 @@ Lamps are estimated from the road network and modelled as standalone solar lamps
 | Solar shape, yield, P90 wettest week | **Real**, NASA POWER 2015–2025 + pvlib, per township |
 | Kulai orientation lookup | **Real**, NASA POWER hourly 2020–2024 (GHI, DNI, DHI) + pvlib Perez, 14% losses |
 | 72-hour weather for the battery controller | **Real**, Open-Meteo hourly forecast, refreshed each morning; the storm drill adds sample heavy rain in hours 30–50 |
-| Load profiles, people served, flood zones, tariffs and battery prices | **Sample** (`web/public/data/load_profiles.json`) |
+| Load profiles, people served, tariffs and battery prices | **Sample** (`web/public/data/load_profiles.json`) |
+| Flood-risk zone | **Off by default**: no flood map is loaded, so a planner ticks it per building (e.g. from the JPS flood map) |
 | Battery sites (PPS 60 kWp / 200 kWh, surau 20 / 60, guardhouse 5 / 15) | **Sample** |
 | Street-lamp specs, battery health, tree shade, charge | **Sample**, fixed seed |
 | Kulai layout, house loads, retrofit cost | **Sample**, fixed seed. Replace with SDP's Kulai masterplan (CAD/GIS) |
