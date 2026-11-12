@@ -10,6 +10,7 @@ import Kulai from './pages/Kulai'
 import BatteryController from './pages/BatteryController'
 import StreetLights from './pages/StreetLights'
 import Resident from './pages/Resident'
+import Analysis from './pages/Analysis'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/battery" element={<BatteryController />} />
         <Route path="/streetlights" element={<StreetLights />} />
         <Route path="/leasing" element={<Leasing />} />
+        <Route path="/analysis" element={<Analysis />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/firming" element={<Firming />} />
         <Route path="/resident" element={<Resident />} />

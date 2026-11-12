@@ -37,6 +37,7 @@ Lamps are estimated from the road network and modelled as standalone solar lamps
 
 | Screen | What it does |
 |---|---|
+| **Energy analysis** (new) | One page for every township: rooftop solar it could generate in a year vs the electricity it uses (homes, businesses, community buildings, street lamps), the share covered, the mix, and a table of all numbers. Generation is computed from the roof scans; use is estimated from labelled sample rates (`pipeline/lega/energy_balance.py`) |
 | **Roof map** | Now opens with community headline numbers: buildings bill-neutral, backup hours at evacuation centres, lamps at risk this week, CO₂ avoided, community bills saved. Commercial sales sit in a smaller "Funded by commercial sales" tile: MWh a year planned with buyers, and the MWh needed to pay back the community batteries |
 | **Community energy planner** (was the portfolio builder) | Asset → goal → plan. Asset types with sample 24-hour load profiles; ownership and criticality; goals *Cut the bills*, *Stay on in an outage* or *Both*. The plan gives kWp, own roof plus leased roofs (CREAM), battery kWh, panels, checks (bill-neutral, wettest week, enough roofs, SDP-owned), a 24-hour solar vs load chart, monthly cover and "Funded by". The list is ranked by a priority score. It starts with City of Elmina's 14 real OpenStreetMap buildings; the **Township map** tab shows them on satellite imagery, with the same solar and battery sizing as the planner (plus how much the assigned roofs can hold). Backup is capped at 168 hours (one week). Commercial buyers still exist, as the funding source |
 | **Battery controller** (replaces the firming forecast) | 72-hour hourly weather (Open-Meteo) through three sample SDP sites. Storm prep, new vs second-life battery, "if the grid fails now", and **Simulate grid outage** |
@@ -115,7 +116,7 @@ bill_neutral   = annual_kWh ≥ terrace 4,800 · semi-D 7,200 · shophouse 9,000
 |---|---|
 | ![Community energy planner: an evacuation centre's plan](docs/screenshots/2-community-planner.jpg) | ![Battery controller: storm drill, 72 hours](docs/screenshots/3-battery-controller.jpg) |
 | ![Street-light watch: lamps at risk this week](docs/screenshots/4-street-light-watch.jpg) | ![Plan a new township: Kulai layout coloured by roof efficiency](docs/screenshots/5-kulai.jpg) |
-| ![Orientation study: Kulai tilt and direction](docs/screenshots/6-orientation-study.jpg) | |
+| ![Orientation study: Kulai tilt and direction](docs/screenshots/6-orientation-study.jpg) | ![Energy analysis: generated vs used by township](docs/screenshots/7-energy-analysis.jpg) |
 
 ---
 

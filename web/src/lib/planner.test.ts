@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
 import cases from '../../../shared/planner_cases.json'
+import profiles from '../../public/data/load_profiles.json'
 import * as p from './planner'
 
 describe('community planner (shared cases with pipeline/lega/planner.py)', () => {
@@ -24,7 +24,7 @@ describe('community planner (shared cases with pipeline/lega/planner.py)', () =>
 })
 
 describe('planner input guards (stress-test regressions)', () => {
-  const data = JSON.parse(readFileSync('public/data/load_profiles.json', 'utf8')) as p.PlannerData
+  const data = profiles as unknown as p.PlannerData
   const hall = { ...p.newAsset('hall', data.profiles.hall), goal: 'both' as p.Goal }
   it('a negative own-roof size counts as no roof', () => {
     expect(p.evaluate({ ...hall, ownRoofKwp: -10 }, data, 20)).toEqual(p.evaluate({ ...hall, ownRoofKwp: 0 }, data, 20))

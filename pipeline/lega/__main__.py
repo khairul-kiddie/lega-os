@@ -1,10 +1,11 @@
 """Run the whole pipeline: python -m lega  (cached downloads make re-runs offline-safe)."""
-from . import battery, community, forecast, kulai, kulai_orientation, live, planner, simulate, streetlights, townships
+from . import battery, community, energy_balance, forecast, kulai, kulai_orientation, live, planner, simulate, streetlights, townships
 
 if __name__ == "__main__":
     print("1/6 yield simulation"); simulate.run()
     print("2/6 township scans (building footprints)"); townships.run()
     print("3/6 community plan (facilities, solar street lamps)"); community.run()
+    print("    energy balance per township"); energy_balance.run()
     print("4/6 Kulai orientation study + sample layout"); kulai_orientation.run(); kulai.run()
     print("    planner load profiles + wettest week"); planner.run()
     print("5/6 forecast model + backtest"); forecast.run()

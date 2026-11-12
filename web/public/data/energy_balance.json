@@ -1,0 +1,253 @@
+{
+ "sample": true,
+ "note": "Generation is computed from real building footprints and real weather. Use is an estimate from sample rates until SDP has meter or TNB bill data.",
+ "assumptions": {
+  "home_kwh_yr": 4800,
+  "apartment_floors": 5,
+  "apartment_m2": 90,
+  "business_kwh_m2": {
+   "commercial": 200,
+   "industrial": 150,
+   "large": 100,
+   "medium": 60,
+   "parking": 5
+  },
+  "grid_t_co2_per_mwh": 0.74
+ },
+ "townships": [
+  {
+   "id": "elmina",
+   "name": "City of Elmina",
+   "state": "Selangor",
+   "parent": null,
+   "generation_mwh": 85695.7,
+   "generation_by_roof": {
+    "homes": 59292.7,
+    "business": 25646.1,
+    "public": 756.8
+   },
+   "use_mwh": 58248.1,
+   "use": {
+    "homes": 29241.6,
+    "business": 27304.9,
+    "community": 613,
+    "lamps": 1088.6
+   },
+   "cover": 1.471,
+   "homes": 6092,
+   "roofs": 1813,
+   "facilities": 14,
+   "lamps": 4131,
+   "yield_kwh_kwp": 1287.3,
+   "co2_t_yr_if_all_used": 43104
+  },
+  {
+   "id": "elmina-bp",
+   "name": "Elmina Business Park",
+   "state": "Selangor",
+   "parent": "elmina",
+   "generation_mwh": 7174.8,
+   "generation_by_roof": {
+    "homes": 2546.2,
+    "business": 4628.7,
+    "public": 0.0
+   },
+   "use_mwh": 10332.9,
+   "use": {
+    "homes": 5102.4,
+    "business": 5178.4,
+    "community": 0,
+    "lamps": 52.1
+   },
+   "cover": 0.694,
+   "homes": 1063,
+   "roofs": 113,
+   "facilities": 0,
+   "lamps": 238,
+   "yield_kwh_kwp": 1287.5,
+   "co2_t_yr_if_all_used": 5309
+  },
+  {
+   "id": "bukit-raja",
+   "name": "Bandar Bukit Raja",
+   "state": "Selangor",
+   "parent": null,
+   "generation_mwh": 118215.3,
+   "generation_by_roof": {
+    "homes": 52060.9,
+    "business": 65381.3,
+    "public": 773.2
+   },
+   "use_mwh": 95364.6,
+   "use": {
+    "homes": 28512.0,
+    "business": 63100.8,
+    "community": 2749,
+    "lamps": 1002.8
+   },
+   "cover": 1.24,
+   "homes": 5940,
+   "roofs": 2703,
+   "facilities": 7,
+   "lamps": 4222,
+   "yield_kwh_kwp": 1287.0,
+   "co2_t_yr_if_all_used": 70570
+  },
+  {
+   "id": "serenia",
+   "name": "Serenia City",
+   "state": "Selangor",
+   "parent": null,
+   "generation_mwh": 12544.4,
+   "generation_by_roof": {
+    "homes": 8844.7,
+    "business": 3680.9,
+    "public": 18.8
+   },
+   "use_mwh": 7125.8,
+   "use": {
+    "homes": 4296.0,
+    "business": 2611.5,
+    "community": 0,
+    "lamps": 218.3
+   },
+   "cover": 1.76,
+   "homes": 895,
+   "roofs": 461,
+   "facilities": 0,
+   "lamps": 943,
+   "yield_kwh_kwp": 1319.7,
+   "co2_t_yr_if_all_used": 5273
+  },
+  {
+   "id": "ara-damansara",
+   "name": "Ara Damansara",
+   "state": "Selangor",
+   "parent": null,
+   "generation_mwh": 118666.9,
+   "generation_by_roof": {
+    "homes": 54317.1,
+    "business": 59684.6,
+    "public": 4665.2
+   },
+   "use_mwh": 144044.9,
+   "use": {
+    "homes": 61684.8,
+    "business": 75839.7,
+    "community": 5887,
+    "lamps": 633.4
+   },
+   "cover": 0.824,
+   "homes": 12851,
+   "roofs": 2736,
+   "facilities": 23,
+   "lamps": 2146,
+   "yield_kwh_kwp": 1291.0,
+   "co2_t_yr_if_all_used": 87814
+  },
+  {
+   "id": "putra-heights",
+   "name": "Putra Heights",
+   "state": "Selangor",
+   "parent": null,
+   "generation_mwh": 92812.6,
+   "generation_by_roof": {
+    "homes": 73236.6,
+    "business": 16700.6,
+    "public": 2875.4
+   },
+   "use_mwh": 59920.6,
+   "use": {
+    "homes": 36297.6,
+    "business": 21708.9,
+    "community": 956,
+    "lamps": 958.1
+   },
+   "cover": 1.549,
+   "homes": 7562,
+   "roofs": 7193,
+   "facilities": 16,
+   "lamps": 3372,
+   "yield_kwh_kwp": 1290.6,
+   "co2_t_yr_if_all_used": 44341
+  },
+  {
+   "id": "nilai-impian",
+   "name": "Nilai Impian",
+   "state": "Negeri Sembilan",
+   "parent": null,
+   "generation_mwh": 75842.2,
+   "generation_by_roof": {
+    "homes": 26948.1,
+    "business": 48603.4,
+    "public": 290.6
+   },
+   "use_mwh": 63733.0,
+   "use": {
+    "homes": 15940.8,
+    "business": 46485.8,
+    "community": 570,
+    "lamps": 736.4
+   },
+   "cover": 1.19,
+   "homes": 3321,
+   "roofs": 1805,
+   "facilities": 5,
+   "lamps": 2821,
+   "yield_kwh_kwp": 1319.7,
+   "co2_t_yr_if_all_used": 47162
+  },
+  {
+   "id": "ainsdale",
+   "name": "Bandar Ainsdale",
+   "state": "Negeri Sembilan",
+   "parent": null,
+   "generation_mwh": 7174.4,
+   "generation_by_roof": {
+    "homes": 2778.2,
+    "business": 4358.7,
+    "public": 37.5
+   },
+   "use_mwh": 4708.8,
+   "use": {
+    "homes": 1464.0,
+    "business": 2917.5,
+    "community": 0,
+    "lamps": 327.3
+   },
+   "cover": 1.524,
+   "homes": 305,
+   "roofs": 201,
+   "facilities": 0,
+   "lamps": 1180,
+   "yield_kwh_kwp": 1314.8,
+   "co2_t_yr_if_all_used": 3484
+  },
+  {
+   "id": "pagoh",
+   "name": "Bandar Universiti Pagoh",
+   "state": "Johor",
+   "parent": null,
+   "generation_mwh": 30836.2,
+   "generation_by_roof": {
+    "homes": 7271.1,
+    "business": 7968.0,
+    "public": 15597.1
+   },
+   "use_mwh": 28562.6,
+   "use": {
+    "homes": 9225.6,
+    "business": 5938.2,
+    "community": 13201.9,
+    "lamps": 196.9
+   },
+   "cover": 1.08,
+   "homes": 1922,
+   "roofs": 557,
+   "facilities": 17,
+   "lamps": 650,
+   "yield_kwh_kwp": 1283.9,
+   "co2_t_yr_if_all_used": 21136
+  }
+ ]
+}
