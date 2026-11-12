@@ -11,6 +11,8 @@ import {
   EFF,
   evaluate,
   GOAL_INFO,
+  MAX_BACKUP_HOURS,
+  roofKwpFor,
   newAsset,
   OWNERSHIP_INFO,
   type Asset,
@@ -61,14 +63,6 @@ function useAsset(): [Asset | undefined, (patch: Partial<Asset>) => void] {
   const a = all.find((x) => x.id === id)
   const update = (patch: Partial<Asset>) => assetStore.set((list) => (list ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)))
   return [a, update]
-}
-
-/** Average size of a good roof left after the community plan: what one leased (CREAM) roof adds. */
-function roofKwpFor(tidx: TownshipIndex | null | undefined, township: string) {
-  const t = tidx?.townships.find((x) => x.id === township)
-  if (!t) return 40
-  const mwh = t.summary.avg_mwh_surplus ?? t.summary.avg_mwh_good
-  return Math.max(5, (mwh * 1000) / t.summary.yield_kwh_kwp)
 }
 
 function PlannerTabs({ active }: { active: 'list' | 'map' }) {
@@ -336,7 +330,7 @@ function Details() {
             <input id="people" inputMode="numeric" className="input mt-1 num" value={form.people} onChange={(e) => set({ people: Number(e.target.value.replace(/\D/g, '')) || 0 })} />
           </Field>
           <Field id="roof" label="Usable solar on its own roof (kWp)">
-            <input id="roof" inputMode="decimal" className="input mt-1 num" value={form.ownRoofKwp} onChange={(e) => set({ ownRoofKwp: Number(e.target.value) || 0 })} />
+            <input id="roof" inputMode="decimal" className="input mt-1 num" value={form.ownRoofKwp} onChange={(e) => set({ ownRoofKwp: Math.max(0, Number(e.target.value.replace(/[^\d.]/g, '')) || 0) })} />
           </Field>
           <label className="flex min-h-touch items-center gap-3 self-end text-sm">
             <input type="checkbox" className="h-5 w-5 accent-primary" checked={form.floodZone} onChange={(e) => set({ floodZone: e.target.checked })} />
@@ -401,7 +395,7 @@ function GoalStep() {
   if (!a) return <NotFound />
   const outage = a.goal !== 'bills'
   const next = () => {
-    update({ backupHours: Math.max(1, Number(hours) || 48) })
+    update({ backupHours: Math.min(MAX_BACKUP_HOURS, Math.max(1, Number(hours) || 48)) })
     navigate(`/planner/${a.id}/plan`)
   }
   return (
@@ -425,13 +419,13 @@ function GoalStep() {
           <div>
             <label htmlFor="hours" className="text-sm font-medium">Backup hours with no grid and no sun</label>
             <div className="mt-1 flex items-center gap-2">
-              <input id="hours" inputMode="numeric" className="input max-w-[120px] num" value={hours} onChange={(e) => setHours(e.target.value.replace(/\D/g, ''))} />
+              <input id="hours" inputMode="numeric" className="input max-w-[120px] num" value={hours} onChange={(e) => setHours(e.target.value.replace(/\D/g, '').slice(0, 3))} />
               {[12, 24, 48, 72].map((h) => (
                 <button key={h} type="button" aria-pressed={hours === String(h)} onClick={() => setHours(String(h))}
                   className={`min-h-touch rounded-md border px-3 text-sm ${hours === String(h) ? 'border-ink bg-ink text-white' : 'border-line'}`}>{h} h</button>
               ))}
             </div>
-            <p className="mt-2 text-sm text-muted">Grid-tied solar switches off in a blackout for safety, so staying on always needs a battery.</p>
+            <p className="mt-2 text-sm text-muted">Up to {MAX_BACKUP_HOURS} hours (one week){Number(hours) > MAX_BACKUP_HOURS ? `; ${hours} h will be planned as ${MAX_BACKUP_HOURS} h` : ''}. Grid-tied solar switches off in a blackout for safety, so staying on always needs a battery.</p>
           </div>
         )}
         {outage && a.ownership !== 'sdp' && (
@@ -508,7 +502,8 @@ function PlanStep() {
       <Stepper step={2} />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="Solar needed" value={fmt(r.kwp, 1)} unit="kWp" hint={`≈ ${fmt(r.panels)} panels of ${550} W`} />
-        <Kpi label="Roofs" value={r.leased_roofs ? `Own + ${r.leased_roofs}` : 'Own roof'} hint={r.leased_roofs ? `${fmt(r.own_kwp, 1)} kWp on its roof, the rest on nearby leased roofs (CREAM)` : `${fmt(r.own_kwp, 1)} kWp on its own roof`} />
+        <Kpi label="Roofs" value={!r.leased_roofs ? 'Own roof' : r.own_kwp >= 0.05 ? `Own + ${r.leased_roofs}` : `${r.leased_roofs} leased`}
+          hint={!r.leased_roofs ? `${fmt(r.own_kwp, 1)} kWp on its own roof` : r.own_kwp >= 0.05 ? `${fmt(r.own_kwp, 1)} kWp on its roof, the rest on nearby leased roofs (CREAM)` : `No usable roof of its own; nearby leased roof${r.leased_roofs > 1 ? 's' : ''} (CREAM), power over TNB's wires`} />
         <Kpi label="Battery" value={fmt(r.battery_kwh)} unit="kWh" hint={r.battery_kwh ? `${fmt(r.backup_hours)} h at ${fmt(r.critical_kw, 1)} kW critical load` : 'Not needed to cut bills'} />
         <Kpi label="Priority score" value={r.priority} unit="/ 100" hint={`${CRITICALITY_INFO[a.criticality].label} · ${fmt(a.people)} people${a.floodZone ? ' · flood zone' : ''}`} />
       </div>

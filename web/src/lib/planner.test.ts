@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import cases from '../../../shared/planner_cases.json'
 import * as p from './planner'
 
@@ -19,5 +20,20 @@ describe('community planner (shared cases with pipeline/lega/planner.py)', () =>
   })
   it('battery = max(night, critical × hours) / (0.9 × 0.95)', () => {
     expect(p.batteryKwh(30, 4, 48)).toBeCloseTo(192 / 0.855)
+  })
+})
+
+describe('planner input guards (stress-test regressions)', () => {
+  const data = JSON.parse(readFileSync('public/data/load_profiles.json', 'utf8')) as p.PlannerData
+  const hall = { ...p.newAsset('hall', data.profiles.hall), goal: 'both' as p.Goal }
+  it('a negative own-roof size counts as no roof', () => {
+    expect(p.evaluate({ ...hall, ownRoofKwp: -10 }, data, 20)).toEqual(p.evaluate({ ...hall, ownRoofKwp: 0 }, data, 20))
+  })
+  it('backup is capped at one week', () => {
+    const r = p.evaluate({ ...hall, backupHours: 10_000 }, data, 20)
+    expect(r.backup_hours).toBeCloseTo(p.MAX_BACKUP_HOURS, 0)
+  })
+  it('a leased roof is never smaller than 5 kWp, so leased roofs stay finite', () => {
+    expect(p.roofKwpFor({ townships: [{ id: 'x', summary: { avg_mwh_good: 0, yield_kwh_kwp: 1300 } }] } as never, 'x')).toBe(5)
   })
 })

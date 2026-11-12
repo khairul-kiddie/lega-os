@@ -3,6 +3,7 @@
 import { loadJson } from './data'
 import type { CommunityPlan, Facility } from './community'
 import { createStore } from './store'
+import type { TownshipIndex } from './townships'
 
 export type AssetType = 'school' | 'surau' | 'hall' | 'guardhouse' | 'clinic' | 'commercial'
 export type Ownership = 'sdp' | 'handed' | 'private'
@@ -139,6 +140,17 @@ export function planAsset(a: AssetInput, prof: { kw: number[]; emergency_kw?: nu
 }
 
 const CRIT_SCORE: Record<Criticality, number> = { critical: 100, essential: 60, standard: 20 }
+/** Longest backup the planner sizes for: one week with no grid and no sun. */
+export const MAX_BACKUP_HOURS = 168
+
+/** Average size of a good roof left after the community plan: what one leased (CREAM) roof adds (min 5 kWp). */
+export function roofKwpFor(tidx: TownshipIndex | null | undefined, township: string) {
+  const t = tidx?.townships.find((x) => x.id === township)
+  if (!t) return 40
+  const mwh = t.summary.avg_mwh_surplus ?? t.summary.avg_mwh_good
+  return Math.max(5, (mwh * 1000) / t.summary.yield_kwh_kwp)
+}
+
 export const PEOPLE_FULL = 1500
 export const BILL_FULL_RM = 150_000
 
@@ -227,7 +239,7 @@ export function evaluate(a: Asset, data: PlannerData, roofKwp: number, secondLif
   const p = data.profiles[a.type]
   const t = data.townships[a.township] ?? data.townships.elmina
   const plan = planAsset(
-    { annual_kwh: a.annualKwh, goal: a.goal, backup_hours: a.backupHours, own_roof_kwp: a.ownRoofKwp, roof_kwp: roofKwp },
+    { annual_kwh: a.annualKwh, goal: a.goal, backup_hours: Math.min(MAX_BACKUP_HOURS, Math.max(0, a.backupHours)), own_roof_kwp: Math.max(0, a.ownRoofKwp), roof_kwp: roofKwp },
     p, data.solar_shape, t.specific_yield, t.p90_kwh_kwp_day,
   )
   const e = data.economics

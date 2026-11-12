@@ -16,6 +16,30 @@ import {
 } from '../lib/community'
 import { leaseItemSat, leasingStore, useStore } from '../lib/store'
 import { loadRoofs, type SatRoof, type TownshipIndex } from '../lib/townships'
+import { assetStore, assetsFromFacilities, evaluate, roofKwpFor, type PlannerData } from '../lib/planner'
+
+/** The planner's sizing for each facility, so this map and the planner always show the same numbers.
+ *  Uses the planner's saved entry when there is one (it may have been edited), otherwise the planner's defaults. */
+export interface Sizing { kwp: number; battery: number; backup: number; goal: string; plannerId: string | null }
+function useSizing(plan: CommunityPlan | null, tidx: TownshipIndex | null | undefined): Map<string, Sizing> {
+  const { data } = useJson<PlannerData>('load_profiles.json')
+  const saved = useStore(assetStore)
+  return useMemo(() => {
+    const m = new Map<string, Sizing>()
+    if (!plan || !data) return m
+    const defaults = assetsFromFacilities(plan, data)
+    const roofKwp = roofKwpFor(tidx, plan.id)
+    for (const f of plan.facilities) {
+      const mine = saved?.find((a) => a.osm === f.id && a.township === plan.id)
+      const a = mine ?? defaults.find((x) => x.osm === f.id)
+      if (!a) continue
+      const r = evaluate(a, data, roofKwp)
+      m.set(f.id, { kwp: r.kwp, battery: r.battery_kwh, backup: r.backup_hours, goal: a.goal, plannerId: mine?.id ?? null })
+    }
+    return m
+  }, [plan, data, saved, tidx])
+}
+const battText = (z: Sizing) => (z.battery > 0 ? `${fmt(z.battery)} kWh battery` : 'no battery')
 
 export const COMMUNITY_PORTFOLIO = (id: string) => `community-${id}`
 
@@ -40,6 +64,7 @@ export default function Community({ embedded = false }: { embedded?: boolean }) 
   const [selected, setSelected] = useState<string | null>(null)
   const [focusKey, setFocusKey] = useState(0)
   const leasing = useStore(leasingStore)
+  const sizing = useSizing(plan, tidx)
 
   useEffect(() => {
     let live = true
@@ -111,10 +136,10 @@ export default function Community({ embedded = false }: { embedded?: boolean }) 
                 <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm" style={{ background: MAP_COLORS.facilityRoof }} />Roof powering a facility</li>
               </ul>
             </section>
-            <Detail plan={plan} selected={selected} roofs={roofs} />
+            <Detail plan={plan} selected={selected} roofs={roofs} sizing={sizing} />
           </div>
 
-          <FacilityTable plan={plan} selected={selected} onSelect={select} />
+          <FacilityTable plan={plan} selected={selected} onSelect={select} sizing={sizing} />
           <LampSection plan={plan} cidx={cidx} selected={selected} onSelect={select} />
 
           <section className="card mt-6 grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" aria-labelledby="next-h">
@@ -143,7 +168,7 @@ export default function Community({ embedded = false }: { embedded?: boolean }) 
   )
 }
 
-function Detail({ plan, selected, roofs }: { plan: CommunityPlan; selected: string | null; roofs: SatRoof[] }) {
+function Detail({ plan, selected, roofs, sizing }: { plan: CommunityPlan; selected: string | null; roofs: SatRoof[]; sizing: Map<string, Sizing> }) {
   const f = plan.facilities.find((x) => x.id === selected)
   const g = plan.lamp_groups.find((x) => x.id === selected)
   const byId = useMemo(() => new Map(roofs.map((r) => [r.id, r])), [roofs])
@@ -160,8 +185,9 @@ function Detail({ plan, selected, roofs }: { plan: CommunityPlan; selected: stri
           <Row k="Used in daylight" v={`${Math.round(f.day_share * 100)}%`} />
           <Row k="Own roof makes" v={f.own_roofs.length ? `${fmt(f.own_mwh, 1)} MWh / yr` : 'No roof mapped'} />
           {f.shared_roofs.length > 0 && <Row k={`${f.shared_roofs.length} nearby roof${f.shared_roofs.length > 1 ? 's' : ''}`} v={`+${fmt(f.shared_mwh, 1)} MWh / yr`} />}
-          <Row k="Solar" v={`${fmt(f.kwp, 1)} kWp`} />
-          <Row k="Battery for after dark" v={`${fmt(f.battery_kwh)} kWh`} />
+          {sizing.get(f.id) && <Row k="Solar it needs" v={`${fmt(sizing.get(f.id)!.kwp, 1)} kWp`} />}
+          <Row k="Roofs assigned can hold" v={`${fmt(f.kwp, 1)} kWp`} />
+          {sizing.get(f.id) && <Row k="Battery" v={sizing.get(f.id)!.battery > 0 ? `${fmt(sizing.get(f.id)!.battery)} kWh (${fmt(sizing.get(f.id)!.backup)} h backup)` : 'None (goal: cut the bills)'} />}
           <Row k="Worst month covered" v={`${Math.round(Math.min(f.cover_worst_month, 3) * 100)}%${f.cover_worst_month > 3 ? '+' : ''}`} />
         </dl>
         {f.surplus_mwh > 0 && (
@@ -170,6 +196,10 @@ function Detail({ plan, selected, roofs }: { plan: CommunityPlan; selected: stri
         {(f.own_roofs.length > 0 || f.shared_roofs.length > 0) && (
           <p className="mt-4 text-sm text-muted">Roofs: {names([...f.own_roofs, ...f.shared_roofs]).join(', ')}</p>
         )}
+        <p className="mt-3 text-sm text-muted">
+          Solar and battery are the planner’s sizing (same numbers as the Community buildings tab).{' '}
+          {sizing.get(f.id)?.plannerId && <Link to={`/planner/${sizing.get(f.id)!.plannerId}/plan`} className="text-primary underline underline-offset-2">Open its plan</Link>}
+        </p>
       </aside>
     )
   }
@@ -213,7 +243,7 @@ const Row = ({ k, v }: { k: string; v: string }) => (
   <div className="flex justify-between gap-4"><dt className="text-muted">{k}</dt><dd className="num text-right font-medium">{v}</dd></div>
 )
 
-function FacilityTable({ plan, selected, onSelect }: { plan: CommunityPlan; selected: string | null; onSelect: (id: string) => void }) {
+function FacilityTable({ plan, selected, onSelect, sizing }: { plan: CommunityPlan; selected: string | null; onSelect: (id: string) => void; sizing: Map<string, Sizing> }) {
   const groups = FACILITY_GROUPS.map((g) => ({ g, items: plan.facilities.filter((f) => f.group === g) })).filter((x) => x.items.length)
   return (
     <section className="card mt-6 p-6" aria-labelledby="fac-h">
@@ -238,7 +268,7 @@ function FacilityTable({ plan, selected, onSelect }: { plan: CommunityPlan; sele
             {groups.map(({ g, items }) => (
               <tbody key={g}>
                 <tr><th scope="rowgroup" colSpan={5} className="bg-page px-2 py-2 text-left text-sm font-semibold">{g} · {items.length}</th></tr>
-                {items.map((f) => <FacilityRow key={f.id} f={f} active={f.id === selected} onSelect={onSelect} />)}
+                {items.map((f) => <FacilityRow key={f.id} f={f} z={sizing.get(f.id)} active={f.id === selected} onSelect={onSelect} />)}
               </tbody>
             ))}
           </table>
@@ -248,7 +278,7 @@ function FacilityTable({ plan, selected, onSelect }: { plan: CommunityPlan; sele
   )
 }
 
-function FacilityRow({ f, active, onSelect }: { f: Facility; active: boolean; onSelect: (id: string) => void }) {
+function FacilityRow({ f, z, active, onSelect }: { f: Facility; z?: Sizing; active: boolean; onSelect: (id: string) => void }) {
   const st = STATUS_INFO[f.status]
   const by = [f.own_roofs.length ? 'own roof' : null, f.shared_roofs.length ? `${f.shared_roofs.length} leased roof${f.shared_roofs.length > 1 ? 's' : ''}` : null].filter(Boolean).join(' + ')
   return (
@@ -258,7 +288,7 @@ function FacilityRow({ f, active, onSelect }: { f: Facility; active: boolean; on
         <div className="text-sm text-muted">{f.label}</div>
       </td>
       <td className="px-2 py-3 num">{fmt(f.need_mwh)} MWh/yr</td>
-      <td className="px-2 py-3">{by || '—'}<div className="text-sm text-muted num">{fmt(f.kwp, 1)} kWp · {fmt(f.battery_kwh)} kWh battery</div></td>
+      <td className="px-2 py-3">{by || '—'}<div className="text-sm text-muted num">{z ? `needs ${fmt(z.kwp, 1)} kWp · ${battText(z)}` : `${fmt(f.kwp, 1)} kWp of roof`}</div></td>
       <td className={`px-2 py-3 num ${f.cover_worst_month >= 1 ? 'text-primary' : 'text-warn'}`}>{Math.round(Math.min(f.cover_worst_month, 3) * 100)}%{f.cover_worst_month > 3 ? '+' : ''}</td>
       <td className="px-2 py-3"><span className={`rounded-full px-3 py-1 text-sm font-medium ${st.cls}`}>{st.label}</span></td>
     </tr>
