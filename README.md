@@ -108,13 +108,13 @@ annual_kWh     = kWp × yield_per_kWp × (1 − shading_loss)
 bill_neutral   = annual_kWh ≥ terrace 4,800 · semi-D 7,200 · shophouse 9,000 kWh
 ```
 
-![Roof map: all SDP townships](docs/screenshots/1-roof-map.jpg)
+![Roof map: community numbers first, all SDP townships](docs/screenshots/1-roof-map.jpg)
 
 | | |
 |---|---|
-| ![Township scan](docs/screenshots/2-township-scan.jpg) | ![Portfolio plan](docs/screenshots/3-portfolio-plan.jpg) |
-| ![Forecast backtest](docs/screenshots/4-forecast-backtest.jpg) | ![Firming forecast](docs/screenshots/5-firming.jpg) |
-| ![Leasing list](docs/screenshots/6-leasing.jpg) | ![Roof scoring model](docs/screenshots/7-roof-model.png) |
+| ![Community energy planner: an evacuation centre's plan](docs/screenshots/2-community-planner.jpg) | ![Battery controller: storm drill, 72 hours](docs/screenshots/3-battery-controller.jpg) |
+| ![Street-light watch: lamps at risk this week](docs/screenshots/4-street-light-watch.jpg) | ![Plan a new township: Kulai layout coloured by roof efficiency](docs/screenshots/5-kulai.jpg) |
+| ![Orientation study: Kulai tilt and direction](docs/screenshots/6-orientation-study.jpg) | |
 
 ---
 
