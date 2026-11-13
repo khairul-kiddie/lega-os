@@ -1,7 +1,7 @@
 {
  "generated_at": "2026-11-12T03:18+00:00",
  "issued_for": "2026-11-12",
- "stale": false,
+ "stale": true,
  "source": "Open-Meteo forecast API (16-day) + LightGBM quantile models",
  "lag_source": "NASA POWER near-real-time, last data 2026-11-03",
  "note": "Backtest validates day-1 accuracy only; days 8–14 are medium confidence and not separately backtested.",
@@ -229,5 +229,6 @@
    "p90": 2.37
   },
   "basis": "Same calendar days, 2015–2025 (pvlib on NASA POWER)"
- }
+ },
+ "stale_reason": "Live API unavailable (ReadTimeout); showing last cached forecast."
 }
